@@ -8,9 +8,20 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-MAIL_USERNAME = os.getenv("MAIL_USERNAME", "")
-MAIL_PASSWORD = os.getenv("MAIL_PASSWORD", "")
-
+def _get_mail_credentials():
+    """Lee las credenciales del .env en cada llamada (no cacheado) y valida ASCII."""
+    username = os.getenv("MAIL_USERNAME", "")
+    password = os.getenv("MAIL_PASSWORD", "")
+    try:
+        # SMTP PLAIN auth requiere ASCII puro — falla con ñ, tildes, etc.
+        username.encode("ascii")
+        password.encode("ascii")
+    except UnicodeEncodeError as e:
+        raise ValueError(
+            f"MAIL_USERNAME o MAIL_PASSWORD contiene caracteres no ASCII: {e}. "
+            "Asegúrate de usar una Contraseña de Aplicación de Google (solo letras y dígitos)."
+        )
+    return username, password
 
 
 def generate_reset_code(length: int = 6) -> str:
@@ -115,13 +126,16 @@ def send_reset_code_email(to_email: str, code: str, user_name: str = "") -> None
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"] = f"StudyMatch <{MAIL_USERNAME}>"
+
+    mail_user, mail_pass = _get_mail_credentials()
+    msg["From"] = f"StudyMatch <{mail_user}>"
     msg["To"] = to_email
 
     msg.attach(MIMEText(plain_body, "plain", "utf-8"))
     msg.attach(MIMEText(html_body, "html", "utf-8"))
 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-        server.login(MAIL_USERNAME, MAIL_PASSWORD)
-        server.sendmail(MAIL_USERNAME, to_email, msg.as_string())
+        server.login(mail_user, mail_pass)
+        server.sendmail(mail_user, to_email, msg.as_string())
+
 

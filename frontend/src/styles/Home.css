@@ -23,6 +23,7 @@
   background: var(--nav-bg);
   transition: background 0.3s ease, border-color 0.3s ease;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .nav-brand {
@@ -32,7 +33,7 @@
 }
 
 .nav-logo {
-  height: 50px;
+  height: 48px;
   max-width: 100%;
   width: auto;
   object-fit: contain;
@@ -41,10 +42,9 @@
 
 .nav-actions {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: center;
-  flex-wrap: wrap;
-  justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 /* Hero Section */
@@ -53,8 +53,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: clamp(40px, 8vw, 80px) clamp(20px, 5vw, 60px);
-  gap: clamp(30px, 6vw, 60px);
+  padding: clamp(40px, 6vw, 70px) clamp(20px, 5vw, 60px);
+  gap: clamp(30px, 5vw, 60px);
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
@@ -87,7 +87,7 @@
 }
 
 .hero-title {
-  font-size: clamp(2.2rem, 5vw + 0.5rem, 3.6rem);
+  font-size: clamp(2.1rem, 4.5vw + 0.5rem, 3.5rem);
   font-weight: 800;
   line-height: 1.15;
   margin-bottom: 20px;
@@ -100,7 +100,7 @@
   color: var(--text-muted);
   font-size: clamp(0.95rem, 2vw, 1.12rem);
   max-width: 520px;
-  margin-bottom: 36px;
+  margin-bottom: 34px;
   line-height: 1.6;
 }
 
@@ -151,12 +151,12 @@
   transform: translateY(-2px);
 }
 
-/* Floating cards Container (Auto layout & responsive) */
+/* ── HERO VISUAL & FLOATING CARDS (Desktop Default) ── */
 .hero-visual {
-  flex: 0 0 min(340px, 100%);
+  flex: 0 0 350px;
   position: relative;
   height: 320px;
-  min-width: 280px;
+  box-sizing: border-box;
 }
 
 .floating-card {
@@ -164,41 +164,66 @@
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 18px 22px;
+  padding: 16px 20px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
   box-shadow: var(--shadow);
   animation: float 3.5s ease-in-out infinite;
-  transition: background 0.3s ease, border-color 0.3s ease;
+  transition: all 0.3s ease;
   width: max-content;
   max-width: 90%;
+  box-sizing: border-box;
 }
 
 .floating-card span:nth-child(2) {
   font-weight: 700;
   color: var(--text);
+  font-size: 0.95rem;
 }
 .floating-card .card-count {
   color: var(--text-muted);
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   font-weight: 500;
 }
-.card-emoji { font-size: 1.8rem; }
+.card-emoji { font-size: 1.8rem; line-height: 1; margin-bottom: 2px; }
 
-.card-1 { top: 10px; left: 0; animation-delay: 0s; border-left: 4px solid #1e4b87; }
-.card-2 { top: 90px; right: 0; animation-delay: 0.9s; border-left: 4px solid #00b4d8; }
-.card-3 { bottom: 10px; left: 30px; animation-delay: 1.8s; border-left: 4px solid #f59e0b; }
+/* Desktop precise non-overlapping coordinates inside 350x320 box */
+.card-1 {
+  top: 15px;
+  left: 10px;
+  animation-delay: 0s;
+  border-left: 4px solid #1e4b87;
+}
+
+.card-2 {
+  top: 110px;
+  right: 10px;
+  animation-delay: 0.9s;
+  border-left: 4px solid #00b4d8;
+}
+
+.card-3 {
+  bottom: 15px;
+  left: 25px;
+  animation-delay: 1.8s;
+  border-left: 4px solid #f59e0b;
+}
 
 @keyframes float {
   0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes floatSubtle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
 }
 
 /* Features Grid (Auto-fill / Auto-fit Responsive Layout) */
 .features-container {
   width: 100%;
-  padding: clamp(30px, 6vw, 60px) clamp(20px, 5vw, 50px);
+  padding: clamp(30px, 5vw, 60px) clamp(20px, 5vw, 50px);
   max-width: 1200px;
   margin: 0 auto;
   box-sizing: border-box;
@@ -253,13 +278,14 @@
   margin-top: auto;
 }
 
-/* ── RESPONSIVE BREAKPOINTS ── */
+/* ── RESPONSIVE BREAKPOINTS (NO OVERLAPPING!) ── */
 @media (max-width: 960px) {
   .hero {
     flex-direction: column;
     text-align: center;
-    padding-top: 40px;
-    padding-bottom: 40px;
+    padding-top: 36px;
+    padding-bottom: 30px;
+    gap: 32px;
   }
   .hero-subtitle {
     margin-left: auto;
@@ -268,43 +294,88 @@
   .hero-buttons {
     justify-content: center;
   }
+
+  /* Reorganiza las tarjetas flotantes en una grilla limpia DEBAJO de los botones */
   .hero-visual {
-    height: 290px;
-    width: 320px;
-    margin: 0 auto;
+    position: relative;
+    height: auto;
+    width: 100%;
+    max-width: 520px;
+    margin: 16px auto 0 auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    flex: none;
   }
+
+  .floating-card {
+    position: relative;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 100%;
+    max-width: 100%;
+    padding: 14px 10px;
+    align-items: center;
+    text-align: center;
+    animation: floatSubtle 3s ease-in-out infinite;
+    transform: none;
+  }
+
+  .card-1 { animation-delay: 0s; }
+  .card-2 { animation-delay: 0.8s; }
+  .card-3 { animation-delay: 1.6s; }
 }
 
 @media (max-width: 640px) {
   .home-nav {
-    padding: 12px 16px;
+    padding: 12px 14px;
   }
   .nav-logo {
-    height: 40px;
+    height: 36px;
   }
   .nav-actions {
-    gap: 8px;
+    gap: 6px;
   }
+
+  /* Oculta la palabra 'Claro' / 'Oscuro' en celulares para que todo quepa en una sola línea */
+  .theme-toggle-label {
+    display: none;
+  }
+  .theme-toggle-btn {
+    padding: 8px 10px;
+  }
+
   .btn-primary, .btn-outline {
-    padding: 8px 14px;
-    font-size: 0.82rem;
+    padding: 7px 12px;
+    font-size: 0.8rem;
   }
+
   .hero-buttons {
     flex-direction: column;
     width: 100%;
+    gap: 10px;
   }
   .btn-hero-primary, .btn-hero-secondary {
     width: 100%;
+    box-sizing: border-box;
   }
+
+  /* En celulares muy pequeños, muestra 2 tarjetas arriba y 1 centrada abajo */
   .hero-visual {
-    width: 100%;
-    min-width: unset;
-    height: 280px;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px;
+    margin-top: 20px;
   }
+
   .floating-card {
-    padding: 14px 18px;
+    padding: 12px 8px;
   }
-  .card-1 { left: 5%; }
-  .card-2 { right: 5%; }
-  .card-3 { left: 15%; }
+  .floating-card span:nth-child(2) {
+    font-size: 0.88rem;
+  }
+  .floating-card .card-count {
+    font-size: 0.76rem;
+  }
 }

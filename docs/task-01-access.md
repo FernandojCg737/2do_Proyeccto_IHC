@@ -33,6 +33,17 @@
 - El enunciado lo permite explícitamente
 - Se implementa un flujo de 2 pasos: verificar email → nueva contraseña
 
+### Política de seguridad de contraseñas y campos de usuario
+- **Campos de registro:** Nombres (`first_name`), Apellidos (`last_name`), Correo Electrónico (`email`), Contraseña (`password`) y Confirmar Contraseña (`confirm`).
+- **Reglas de contraseña (validación en Frontend y Backend):**
+  - Mínimo 8 caracteres de longitud.
+  - Al menos una letra mayúscula (`A-Z`).
+  - Al menos una letra minúscula (`a-z`).
+  - Al menos un número (`0-9`).
+  - Al menos un carácter especial (`!@#$%^&*...`).
+  - Confirmación idéntica a la contraseña.
+  - Checklist interactivo visual en tiempo real para mejorar la experiencia de usuario (IHC).
+
 ---
 
 ## Funcionalidades implementadas

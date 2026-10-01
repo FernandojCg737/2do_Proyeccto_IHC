@@ -51,8 +51,36 @@ export function AuthProvider({ children }) {
     return res.data
   }
 
+  const changePassword = async (current_password, new_password) => {
+    const res = await api.post('/auth/change-password', { current_password, new_password })
+    return res.data
+  }
+
+  const refreshUser = async () => {
+    try {
+      const res = await api.get('/auth/me')
+      localStorage.setItem('user', JSON.stringify(res.data))
+      setUser(res.data)
+      return res.data
+    } catch (e) {
+      console.warn('No se pudo refrescar datos de usuario:', e)
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, register, login, logout, forgotPassword, resetPassword }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        register,
+        login,
+        logout,
+        forgotPassword,
+        resetPassword,
+        changePassword,
+        refreshUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )

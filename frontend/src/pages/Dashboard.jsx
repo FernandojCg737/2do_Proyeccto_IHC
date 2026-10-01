@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import ThemeToggle from '../components/ThemeToggle'
 import api from '../api/axios'
@@ -86,7 +86,12 @@ export default function Dashboard() {
         </div>
         <div className="mobile-header-actions">
           <ThemeToggle />
-          <div className="header-avatar" title={user?.full_name || user?.email}>
+          <div
+            className="header-avatar"
+            title="Ver mi perfil"
+            style={{ cursor: 'pointer' }}
+            onClick={() => navigate('/profile')}
+          >
             {userInitial}
           </div>
           <button
@@ -108,11 +113,11 @@ export default function Dashboard() {
           </div>
         </div>
         <nav className="sidebar-nav">
-          <a href="#" className="sidebar-item active">🏠 <span>Dashboard</span></a>
+          <Link to="/dashboard" className="sidebar-item active">🏠 <span>Dashboard</span></Link>
           <a href="#materias" className="sidebar-item">📚 <span>Materias ({subjects.length})</span></a>
           <a href="#" className="sidebar-item">👥 <span>Mis grupos ({joinedSubjects.length})</span></a>
           <a href="#" className="sidebar-item">📅 <span>Sesiones activas</span></a>
-          <a href="#" className="sidebar-item">👤 <span>Mi perfil</span></a>
+          <Link to="/profile" className="sidebar-item">👤 <span>Mi perfil</span></Link>
         </nav>
         <div className="sidebar-footer">
           <button
@@ -138,7 +143,12 @@ export default function Dashboard() {
           </div>
           <div className="dashboard-header-right">
             <ThemeToggle />
-            <div className="header-avatar" title={user?.full_name || user?.email}>
+            <div
+              className="header-avatar"
+              title="Ver mi perfil"
+              style={{ cursor: 'pointer' }}
+              onClick={() => navigate('/profile')}
+            >
               {userInitial}
             </div>
           </div>
@@ -284,10 +294,10 @@ export default function Dashboard() {
           <span className="mobile-nav-icon">📅</span>
           <span>Sesiones</span>
         </a>
-        <a href="#" className="mobile-nav-item">
+        <Link to="/profile" className="mobile-nav-item">
           <span className="mobile-nav-icon">👤</span>
           <span>Perfil</span>
-        </a>
+        </Link>
       </nav>
 
       {/* Logout confirm modal */}

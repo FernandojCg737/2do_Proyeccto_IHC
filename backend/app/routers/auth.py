@@ -1,11 +1,58 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User
-from app.schemas import UserCreate, UserLogin, Token, PasswordResetRequest, PasswordChange, UserResponse
-from app.security import hash_password, verify_password, create_access_token
+from app.schemas import (
+    UserCreate,
+    UserLogin,
+    Token,
+    PasswordResetRequest,
+    PasswordChange,
+    UserResponse,
+    ChangePasswordRequest,
+)
+from app.security import hash_password, verify_password, create_access_token, decode_token
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+security = HTTPBearer(auto_error=False)
+
+
+def get_current_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    token: Optional[str] = Query(None, description="Token opcional en query string"),
+    db: Session = Depends(get_db),
+) -> User:
+    """Extrae y valida el usuario actual desde el Header Bearer o Query param."""
+    raw_token = None
+    if credentials and credentials.credentials:
+        raw_token = credentials.credentials
+    elif token:
+        raw_token = token
+
+    if not raw_token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="No autenticado: falta token de acceso",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    payload = decode_token(raw_token)
+    if not payload or not payload.get("sub"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token inválido o expirado",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = db.query(User).filter(User.id == int(payload["sub"])).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usuario no encontrado",
+        )
+    return user
 
 
 @router.post("/register", response_model=Token, status_code=status.HTTP_201_CREATED)
@@ -73,13 +120,29 @@ def reset_password(data: PasswordChange, db: Session = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserResponse)
-def get_me(token: str, db: Session = Depends(get_db)):
+def get_me(current_user: User = Depends(get_current_user)):
     """Devuelve el usuario autenticado a partir del token."""
-    from app.security import decode_token
-    payload = decode_token(token)
-    if not payload:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")
-    user = db.query(User).filter(User.id == int(payload["sub"])).first()
-    if not user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
-    return user
+    return current_user
+
+
+@router.post("/change-password")
+def change_password(
+    data: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Permite al estudiante autenticado cambiar su contraseña verificando la actual."""
+    if not verify_password(data.current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La contraseña actual ingresada es incorrecta",
+        )
+    if data.current_password == data.new_password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La nueva contraseña debe ser diferente a la contraseña actual",
+        )
+    current_user.hashed_password = hash_password(data.new_password)
+    db.commit()
+    return {"message": "¡Contraseña actualizada exitosamente!"}
+

@@ -1,3 +1,4 @@
+from datetime import datetime
 import re
 from pydantic import BaseModel, EmailStr, field_validator
 
@@ -40,9 +41,11 @@ class UserResponse(BaseModel):
     full_name: str
     email: str
     is_active: bool
+    created_at: datetime | None = None
 
     class Config:
         from_attributes = True
+
 
 
 class Token(BaseModel):
@@ -63,6 +66,17 @@ class PasswordChange(BaseModel):
     @classmethod
     def validate_new_password(cls, v: str) -> str:
         return validate_password_rules(v)
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, v: str) -> str:
+        return validate_password_rules(v)
+
 
 
 class SubjectBase(BaseModel):

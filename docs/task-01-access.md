@@ -68,12 +68,14 @@
 |-----------|--------|---------|
 | Registro de cuenta | ✅ | `pages/Register.jsx` + `routers/auth.py` |
 | Inicio de sesión | ✅ | `pages/Login.jsx` + `routers/auth.py` |
-| Cierre de sesión | ✅ | `pages/Dashboard.jsx` (botón + modal) |
+| Cierre de sesión | ✅ | `pages/Dashboard.jsx` / `pages/Profile.jsx` (modal) |
 | Recuperación de contraseña | ✅ | `pages/ForgotPassword.jsx` + `routers/auth.py` |
 | Sesión persistente al recargar | ✅ | `context/AuthContext.jsx` (localStorage) |
 | Ruta pública | ✅ | `/` → `pages/Home.jsx` |
-| Ruta privada con redirección | ✅ | `/dashboard` + `components/PrivateRoute.jsx` |
-| Nombre del usuario autenticado | ✅ | `pages/Dashboard.jsx` (muestra `user.full_name`) |
+| Rutas privadas con redirección | ✅ | `/dashboard`, `/profile` + `components/PrivateRoute.jsx` |
+| Nombre del usuario autenticado | ✅ | `pages/Dashboard.jsx`, `pages/Profile.jsx` |
+| Perfil con datos del usuario | ✅ | `pages/Profile.jsx` (`/profile` + `/auth/me`) |
+| Cambio de contraseña autenticado | ✅ | `pages/Profile.jsx` + `POST /auth/change-password` |
 
 ---
 
@@ -81,7 +83,7 @@
 
 ```
 frontend/src/
-├── context/AuthContext.jsx      ← Lógica de sesión global
+├── context/AuthContext.jsx      ← Lógica de sesión global (login, logout, changePassword, refreshUser)
 ├── components/PrivateRoute.jsx  ← Protección de rutas
 ├── components/ThemeToggle.jsx   ← Switch modo claro / oscuro
 ├── data/subjects.js            ← Catálogo oficial de 53 materias de la carrera
@@ -89,17 +91,33 @@ frontend/src/
 ├── pages/Register.jsx           ← Registro de cuenta (validaciones IHC)
 ├── pages/ForgotPassword.jsx     ← Recuperar contraseña
 ├── pages/Dashboard.jsx          ← Ruta privada (53 materias, buscador, filtros)
+├── pages/Profile.jsx            ← Ruta privada (perfil de estudiante y cambio de contraseña)
 ├── pages/Home.jsx               ← Ruta pública (hero, CTA, logo de marca)
 └── api/axios.js                 ← Cliente HTTP con token automático
 
 backend/app/
-├── main.py                      ← Entrada FastAPI + CORS
-├── routers/auth.py              ← Endpoints de autenticación
-├── models.py                    ← Modelo User (PostgreSQL)
-├── schemas.py                   ← Validación de datos
+├── main.py                      ← Entrada FastAPI + CORS + Auto-seed
+├── routers/auth.py              ← Endpoints de autenticación (/register, /login, /me, /change-password)
+├── routers/subjects.py          ← Endpoints de materias (/subjects, /subjects/{code}, /seed)
+├── models.py                    ← Modelos User y Subject (PostgreSQL)
+├── schemas.py                   ← Validación de datos Pydantic
 ├── security.py                  ← JWT + bcrypt
 └── database.py                  ← Conexión SQLAlchemy
 ```
+
+---
+
+## Perfil del Estudiante y Seguridad de Contraseña (`/profile`)
+Al hacer clic en **"Mi perfil"** desde la barra lateral, el menú móvil o el avatar del estudiante:
+1. **Datos Registrados del Estudiante:**
+   - Muestra nombres, apellidos, nombre completo, correo electrónico institucional/personal, estado de la cuenta (activa) y fecha de creación.
+   - Avatar grande con la inicial del estudiante y distintivo de cuenta activa con animación.
+2. **Cambio de Contraseña Seguro:**
+   - Requiere la **contraseña actual** para verificar la identidad antes de cualquier cambio.
+   - Solicita la **nueva contraseña** con validación visual en vivo de las políticas de seguridad (mínimo 8 caracteres, mayúscula, minúscula, número y símbolo).
+   - Solicita la **confirmación** con comprobación de coincidencia.
+   - Valida en backend y frontend que la nueva clave sea diferente a la actual.
+   - Proporciona retroalimentación inmediata con alertas de éxito o advertencia.
 
 ---
 
@@ -108,3 +126,4 @@ El dashboard cuenta con las 53 asignaturas oficiales del plan de estudios de la 
 - **Búsqueda instantánea:** Filtrado por código o nombre de materia en tiempo real.
 - **Filtros por área:** Programación, Matemáticas, Sistemas, Redes, IA, Software, Electivas.
 - **Interacción de grupos:** Unirse o salir de salas y grupos de estudio con estado visual inmediato.
+

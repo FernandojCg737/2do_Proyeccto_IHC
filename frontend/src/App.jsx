@@ -7,6 +7,7 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import ForgotPassword from './pages/ForgotPassword'
 import Dashboard from './pages/Dashboard'
+import Profile from './pages/Profile'
 
 export default function App() {
   return (
@@ -22,12 +23,20 @@ export default function App() {
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
 
-            {/* Ruta privada - requiere sesión activa */}
+            {/* Rutas privadas - requieren sesión activa */}
             <Route
               path="/dashboard"
               element={
                 <PrivateRoute>
                   <Dashboard />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <PrivateRoute>
+                  <Profile />
                 </PrivateRoute>
               }
             />
@@ -40,3 +49,4 @@ export default function App() {
     </ThemeProvider>
   )
 }
+

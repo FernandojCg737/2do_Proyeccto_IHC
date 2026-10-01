@@ -68,21 +68,23 @@ export default function Home() {
       </section>
 
       {/* Features */}
-      <section className="features">
-        <div className="feature-card">
-          <div className="feature-icon">🤝</div>
-          <h3>Conecta con compañeros</h3>
-          <p>Encuentra estudiantes de tu misma materia y nivel académico.</p>
-        </div>
-        <div className="feature-card">
-          <div className="feature-icon">📅</div>
-          <h3>Organiza sesiones</h3>
-          <p>Agenda sesiones de estudio en grupo y recibe recordatorios.</p>
-        </div>
-        <div className="feature-card">
-          <div className="feature-icon">🚀</div>
-          <h3>Mejora tu rendimiento</h3>
-          <p>Estudiar en equipo potencia el aprendizaje y la comprensión.</p>
+      <section className="features-container">
+        <div className="features">
+          <div className="feature-card">
+            <div className="feature-icon">🤝</div>
+            <h3>Conecta con compañeros</h3>
+            <p>Encuentra estudiantes de tu misma materia y nivel académico.</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon">📅</div>
+            <h3>Organiza sesiones</h3>
+            <p>Agenda sesiones de estudio en grupo y recibe recordatorios.</p>
+          </div>
+          <div className="feature-card">
+            <div className="feature-icon">🚀</div>
+            <h3>Mejora tu rendimiento</h3>
+            <p>Estudiar en equipo potencia el aprendizaje y la comprensión.</p>
+          </div>
         </div>
       </section>
 

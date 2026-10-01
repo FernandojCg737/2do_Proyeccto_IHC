@@ -89,6 +89,12 @@ export default function Register() {
         </div>
 
         <div className="auth-card">
+          <div className="auth-mobile-logo">
+            <Link to="/" className="auth-logo-badge">
+              <img src="/logo.png" alt="StudyMatch" className="auth-logo" />
+            </Link>
+          </div>
+
           <h1 className="auth-title">Crear cuenta</h1>
           <p className="auth-subtitle">
             ¿Ya tienes cuenta? <Link to="/login" className="auth-link">Inicia sesión</Link>

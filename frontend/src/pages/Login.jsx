@@ -52,6 +52,12 @@ export default function Login() {
         </div>
 
         <div className="auth-card">
+          <div className="auth-mobile-logo">
+            <Link to="/" className="auth-logo-badge">
+              <img src="/logo.png" alt="StudyMatch" className="auth-logo" />
+            </Link>
+          </div>
+
           <h1 className="auth-title">Iniciar sesión</h1>
           <p className="auth-subtitle">
             ¿No tienes cuenta? <Link to="/register" className="auth-link">Regístrate aquí</Link>

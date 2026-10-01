@@ -94,6 +94,12 @@ export default function ForgotPassword() {
         </div>
 
         <div className="auth-card">
+          <div className="auth-mobile-logo">
+            <Link to="/" className="auth-logo-badge">
+              <img src="/logo.png" alt="StudyMatch" className="auth-logo" />
+            </Link>
+          </div>
+
           <h1 className="auth-title">
             {step === 1 ? 'Recuperar contraseña' : 'Nueva contraseña'}
           </h1>

@@ -28,7 +28,28 @@ export default function Dashboard() {
 
   return (
     <div className="dashboard-page">
-      {/* Sidebar */}
+      {/* Mobile Top Header (Screens < 768px) */}
+      <header className="mobile-header">
+        <div className="sidebar-logo-container">
+          <img src="/logo.png" alt="StudyMatch" className="sidebar-logo" />
+        </div>
+        <div className="mobile-header-actions">
+          <ThemeToggle />
+          <div className="header-avatar" title={user?.full_name || user?.email}>
+            {userInitial}
+          </div>
+          <button
+            className="mobile-logout-btn"
+            onClick={() => setShowLogoutConfirm(true)}
+            title="Cerrar sesión"
+            aria-label="Cerrar sesión"
+          >
+            🚪
+          </button>
+        </div>
+      </header>
+
+      {/* Desktop / Tablet Sidebar (Screens >= 768px) */}
       <aside className="sidebar">
         <div className="sidebar-brand">
           <div className="sidebar-logo-container">
@@ -54,7 +75,7 @@ export default function Dashboard() {
 
       {/* Main content */}
       <main className="dashboard-main">
-        {/* Header */}
+        {/* Desktop Header */}
         <header className="dashboard-header">
           <div>
             <h1 className="welcome-title">
@@ -70,7 +91,7 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {/* Stats */}
+        {/* Stats Grid */}
         <div className="stats-grid">
           <div className="stat-card">
             <div className="stat-value">6</div>
@@ -102,6 +123,30 @@ export default function Dashboard() {
           ))}
         </div>
       </main>
+
+      {/* Mobile Bottom Navigation (Screens < 768px) */}
+      <nav className="mobile-bottom-nav">
+        <a href="#" className="mobile-nav-item active">
+          <span className="mobile-nav-icon">🏠</span>
+          <span>Inicio</span>
+        </a>
+        <a href="#" className="mobile-nav-item">
+          <span className="mobile-nav-icon">🔍</span>
+          <span>Buscar</span>
+        </a>
+        <a href="#" className="mobile-nav-item">
+          <span className="mobile-nav-icon">📅</span>
+          <span>Sesiones</span>
+        </a>
+        <a href="#" className="mobile-nav-item">
+          <span className="mobile-nav-icon">📚</span>
+          <span>Materias</span>
+        </a>
+        <a href="#" className="mobile-nav-item">
+          <span className="mobile-nav-icon">👤</span>
+          <span>Perfil</span>
+        </a>
+      </nav>
 
       {/* Logout confirm modal */}
       {showLogoutConfirm && (

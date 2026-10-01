@@ -44,6 +44,13 @@
   - Confirmación idéntica a la contraseña.
   - Checklist interactivo visual en tiempo real para mejorar la experiencia de usuario (IHC).
 
+### Identidad visual y Accesibilidad (Modo Claro / Modo Oscuro)
+- **Paleta de marca adaptada a `logo.png`:**
+  - Azul Marino StudyMatch (`#1e4b87`)
+  - Cian / Turquesa colaborativo (`#00b4d8`, `#38bdf8`)
+  - Ámbar cálido de apoyo (`#f59e0b`)
+- **Switch Claro / Oscuro con persistencia en `localStorage`:** Permite al estudiante alternar entre un diseño académico limpio (Modo Claro) y un entorno nocturno relajante para largas sesiones de estudio (Modo Oscuro).
+
 ---
 
 ## Funcionalidades implementadas

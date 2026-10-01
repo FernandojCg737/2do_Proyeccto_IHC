@@ -51,6 +51,15 @@ export function AuthProvider({ children }) {
     return res.data
   }
 
+  const loginWithCode = async (email, code) => {
+    const res = await api.post('/auth/login-with-code', { email, code })
+    const { access_token, user } = res.data
+    localStorage.setItem('token', access_token)
+    localStorage.setItem('user', JSON.stringify(user))
+    setUser(user)
+    return user
+  }
+
   const changePassword = async (current_password, new_password) => {
     const res = await api.post('/auth/change-password', { current_password, new_password })
     return res.data
@@ -102,6 +111,7 @@ export function AuthProvider({ children }) {
         logout,
         forgotPassword,
         resetPassword,
+        loginWithCode,
         changePassword,
         refreshUser,
         updateProfile,

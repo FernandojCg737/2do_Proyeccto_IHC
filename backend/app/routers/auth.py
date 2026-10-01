@@ -1,21 +1,25 @@
 import base64
+from datetime import datetime, timedelta, timezone
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, BackgroundTasks
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.database import get_db
-from app.models import User
+from app.models import User, PasswordResetCode
 from app.schemas import (
     UserCreate,
     UserLogin,
     Token,
     PasswordResetRequest,
     PasswordChange,
+    VerifyResetCode,
+    ResetPasswordWithCode,
     UserResponse,
     ChangePasswordRequest,
     UserProfileUpdate,
 )
 from app.security import hash_password, verify_password, create_access_token, decode_token
+from app.utils.email_service import generate_reset_code, send_reset_code_email
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 security = HTTPBearer(auto_error=False)
@@ -95,30 +99,161 @@ def login(credentials: UserLogin, db: Session = Depends(get_db)):
     return {"access_token": token, "token_type": "bearer", "user": user}
 
 
-@router.post("/forgot-password")
-def forgot_password(request: PasswordResetRequest, db: Session = Depends(get_db)):
-    """Verifica que el email existe (sin enviar correo real)."""
+@router.post("/send-reset-code")
+def send_reset_code(
+    request: PasswordResetRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
+    """
+    Paso 1 – Genera y envía un código de 6 dígitos al correo del usuario.
+    Para no bloquear la respuesta, el correo se envía en background.
+    """
     user = db.query(User).filter(User.email == request.email).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No existe una cuenta con ese correo"
+            detail="No existe una cuenta registrada con ese correo electrónico",
         )
-    return {"message": "Correo verificado. Puedes cambiar tu contraseña.", "email": request.email}
+
+    # Invalidar códigos previos no usados de ese email
+    db.query(PasswordResetCode).filter(
+        PasswordResetCode.email == request.email,
+        PasswordResetCode.used == False,
+    ).update({"used": True})
+
+    code = generate_reset_code()
+    expires_at = datetime.now(timezone.utc) + timedelta(minutes=10)
+
+    reset_entry = PasswordResetCode(
+        email=request.email,
+        code=code,
+        expires_at=expires_at,
+    )
+    db.add(reset_entry)
+    db.commit()
+
+    # Enviar en background para no bloquear la respuesta HTTP
+    user_name = user.first_name or user.full_name.split()[0]
+    background_tasks.add_task(send_reset_code_email, request.email, code, user_name)
+
+    return {
+        "message": "Código de verificación enviado al correo electrónico",
+        "email": request.email,
+    }
 
 
-@router.post("/reset-password")
-def reset_password(data: PasswordChange, db: Session = Depends(get_db)):
-    """Cambia la contraseña del usuario."""
+@router.post("/verify-reset-code")
+def verify_reset_code(data: VerifyResetCode, db: Session = Depends(get_db)):
+    """
+    Paso 2 – Verifica que el código de 6 dígitos sea válido y no haya expirado.
+    """
+    entry = (
+        db.query(PasswordResetCode)
+        .filter(
+            PasswordResetCode.email == data.email,
+            PasswordResetCode.code == data.code,
+            PasswordResetCode.used == False,
+        )
+        .order_by(PasswordResetCode.created_at.desc())
+        .first()
+    )
+
+    if not entry:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Código incorrecto o ya utilizado",
+        )
+
+    if datetime.now(timezone.utc) > entry.expires_at.replace(tzinfo=timezone.utc):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El código ha expirado. Solicita uno nuevo.",
+        )
+
+    return {"message": "Código verificado correctamente", "valid": True}
+
+
+@router.post("/login-with-code", response_model=Token)
+def login_with_code(data: VerifyResetCode, db: Session = Depends(get_db)):
+    """
+    Inicio de sesión directo usando el código de verificación ya validado.
+    Permite omitir el cambio de contraseña e iniciar sesión de inmediato.
+    Marca el código como usado para que no pueda reutilizarse.
+    """
+    entry = (
+        db.query(PasswordResetCode)
+        .filter(
+            PasswordResetCode.email == data.email,
+            PasswordResetCode.code == data.code,
+            PasswordResetCode.used == False,
+        )
+        .order_by(PasswordResetCode.created_at.desc())
+        .first()
+    )
+
+    if not entry:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Código incorrecto o ya utilizado",
+        )
+
+    if datetime.now(timezone.utc) > entry.expires_at.replace(tzinfo=timezone.utc):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El código ha expirado. Solicita uno nuevo.",
+        )
+
     user = db.query(User).filter(User.email == data.email).first()
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Usuario no encontrado"
-        )
-    user.hashed_password = hash_password(data.new_password)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+
+    entry.used = True
     db.commit()
-    return {"message": "Contraseña actualizada correctamente"}
+
+    token = create_access_token({"sub": str(user.id), "email": user.email})
+    return {"access_token": token, "token_type": "bearer", "user": user}
+
+
+
+@router.post("/reset-password-with-code")
+def reset_password_with_code(data: ResetPasswordWithCode, db: Session = Depends(get_db)):
+    """
+    Paso 3 – Verifica el código nuevamente y cambia la contraseña.
+    Marca el código como usado al completar el proceso.
+    """
+    entry = (
+        db.query(PasswordResetCode)
+        .filter(
+            PasswordResetCode.email == data.email,
+            PasswordResetCode.code == data.code,
+            PasswordResetCode.used == False,
+        )
+        .order_by(PasswordResetCode.created_at.desc())
+        .first()
+    )
+
+    if not entry:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Código incorrecto o ya utilizado",
+        )
+
+    if datetime.now(timezone.utc) > entry.expires_at.replace(tzinfo=timezone.utc):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El código ha expirado. Solicita uno nuevo.",
+        )
+
+    user = db.query(User).filter(User.email == data.email).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuario no encontrado")
+
+    user.hashed_password = hash_password(data.new_password)
+    entry.used = True
+    db.commit()
+
+    return {"message": "¡Contraseña restablecida correctamente! Ya puedes iniciar sesión."}
 
 
 @router.get("/me", response_model=UserResponse)

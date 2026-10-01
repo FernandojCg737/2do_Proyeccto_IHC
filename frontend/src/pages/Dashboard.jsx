@@ -5,6 +5,7 @@ import ThemeToggle from '../components/ThemeToggle'
 import api from '../api/axios'
 import { subjectsData } from '../data/subjects'
 import { getStudentInitials } from '../utils/avatar'
+import LogoutIcon from '../components/LogoutIcon'
 import '../styles/Dashboard.css'
 
 export default function Dashboard() {
@@ -105,7 +106,7 @@ export default function Dashboard() {
             title="Cerrar sesión"
             aria-label="Cerrar sesión"
           >
-            🚪
+            <LogoutIcon />
           </button>
         </div>
       </header>
@@ -129,7 +130,7 @@ export default function Dashboard() {
             className="sidebar-logout"
             onClick={() => setShowLogoutConfirm(true)}
           >
-            🚪 <span>Cerrar sesión</span>
+            <LogoutIcon /> <span>Cerrar sesión</span>
           </button>
         </div>
       </aside>
@@ -186,11 +187,6 @@ export default function Dashboard() {
               <h2 className="section-title">
                 Materias Académicas
                 <span className="subjects-count-badge">{filteredSubjects.length}</span>
-                {dbLoaded && (
-                  <span className="db-sync-badge" title="Materias sincronizadas directamente con PostgreSQL">
-                    🗄️ PostgreSQL ({subjects.length})
-                  </span>
-                )}
               </h2>
               <p className="section-subtitle">
                 Únete a un grupo de estudio o busca compañeros por materia oficial

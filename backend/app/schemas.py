@@ -72,6 +72,23 @@ class PasswordChange(BaseModel):
         return validate_password_rules(v)
 
 
+class VerifyResetCode(BaseModel):
+    email: EmailStr
+    code: str
+
+
+class ResetPasswordWithCode(BaseModel):
+    email: EmailStr
+    code: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_new_password(cls, v: str) -> str:
+        return validate_password_rules(v)
+
+
+
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str

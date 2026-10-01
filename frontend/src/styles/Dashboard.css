@@ -33,17 +33,27 @@
 }
 
 .mobile-logout-btn {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  font-size: 1.1rem;
-  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #ef4444;
+  padding: 7px 10px;
   border-radius: var(--radius);
   cursor: pointer;
   transition: all 0.2s ease;
   line-height: 1;
 }
+.mobile-logout-btn svg {
+  width: 20px;
+  height: 20px;
+  stroke: #ef4444;
+  flex-shrink: 0;
+}
 .mobile-logout-btn:hover {
-  background: rgba(239, 68, 68, 0.2);
+  background: rgba(239, 68, 68, 0.25);
+  border-color: rgba(239, 68, 68, 0.6);
 }
 
 /* ── DESKTOP & TABLET SIDEBAR (>= 768px) ── */

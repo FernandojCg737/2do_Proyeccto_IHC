@@ -132,6 +132,40 @@
 
 .form-group input::placeholder { color: var(--text-muted); }
 
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.password-requirements {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.78rem;
+}
+
+.req-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-muted);
+  transition: color 0.2s;
+}
+
+.req-item.valid {
+  color: var(--success);
+  font-weight: 500;
+}
+
+.req-icon {
+  font-size: 0.85rem;
+}
+
 .forgot-link {
   text-align: right;
   margin-top: -8px;

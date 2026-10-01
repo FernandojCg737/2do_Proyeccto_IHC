@@ -4,11 +4,27 @@ import { useAuth } from '../context/AuthContext'
 import '../styles/Auth.css'
 
 export default function Register() {
-  const [form, setForm] = useState({ full_name: '', email: '', password: '', confirm: '' })
+  const [form, setForm] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    password: '',
+    confirm: '',
+  })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { register } = useAuth()
   const navigate = useNavigate()
+
+  const rules = {
+    length: form.password.length >= 8,
+    upper: /[A-Z]/.test(form.password),
+    lower: /[a-z]/.test(form.password),
+    number: /\d/.test(form.password),
+    special: /[!@#$%^&*(),.?":{}|<>_\-+=[\]\\/~`]/.test(form.password),
+  }
+
+  const isPasswordValid = Object.values(rules).every(Boolean)
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -17,20 +33,33 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+
+    if (!form.first_name.trim() || !form.last_name.trim()) {
+      setError('Por favor ingresa tus nombres y apellidos')
+      return
+    }
+
+    if (!isPasswordValid) {
+      setError('La contraseña debe cumplir con todos los requisitos de seguridad')
+      return
+    }
+
     if (form.password !== form.confirm) {
       setError('Las contraseñas no coinciden')
       return
     }
-    if (form.password.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres')
-      return
-    }
+
     setLoading(true)
     try {
-      await register(form.full_name, form.email, form.password)
+      await register(form.first_name, form.last_name, form.email, form.password)
       navigate('/dashboard')
     } catch (err) {
-      setError(err.response?.data?.detail || 'Error al registrarse')
+      const detail = err.response?.data?.detail
+      if (Array.isArray(detail)) {
+        setError(detail.map(d => d.msg).join(', '))
+      } else {
+        setError(detail || 'Error al registrarse')
+      }
     } finally {
       setLoading(false)
     }
@@ -58,22 +87,38 @@ export default function Register() {
           </p>
 
           <form onSubmit={handleSubmit} className="auth-form">
-            <div className="form-group">
-              <label htmlFor="full_name">Nombre completo</label>
-              <input
-                id="full_name"
-                type="text"
-                name="full_name"
-                placeholder="Fernando García"
-                value={form.full_name}
-                onChange={handleChange}
-                required
-                autoComplete="name"
-              />
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="first_name">Nombres</label>
+                <input
+                  id="first_name"
+                  type="text"
+                  name="first_name"
+                  placeholder="Fernando"
+                  value={form.first_name}
+                  onChange={handleChange}
+                  required
+                  autoComplete="given-name"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="last_name">Apellidos</label>
+                <input
+                  id="last_name"
+                  type="text"
+                  name="last_name"
+                  placeholder="Calani García"
+                  value={form.last_name}
+                  onChange={handleChange}
+                  required
+                  autoComplete="family-name"
+                />
+              </div>
             </div>
 
             <div className="form-group">
-              <label htmlFor="reg-email">Correo electrónico</label>
+              <label htmlFor="reg-email">Correo Electrónico</label>
               <input
                 id="reg-email"
                 type="email"
@@ -92,7 +137,7 @@ export default function Register() {
                 id="reg-password"
                 type="password"
                 name="password"
-                placeholder="Mínimo 6 caracteres"
+                placeholder="••••••••"
                 value={form.password}
                 onChange={handleChange}
                 required
@@ -100,8 +145,32 @@ export default function Register() {
               />
             </div>
 
+            {/* Checklist de requisitos de contraseña */}
+            <div className="password-requirements">
+              <div className={`req-item ${rules.length ? 'valid' : ''}`}>
+                <span className="req-icon">{rules.length ? '✓' : '○'}</span>
+                <span>Al menos 8 caracteres</span>
+              </div>
+              <div className={`req-item ${rules.upper ? 'valid' : ''}`}>
+                <span className="req-icon">{rules.upper ? '✓' : '○'}</span>
+                <span>Al menos 1 letra mayúscula (A-Z)</span>
+              </div>
+              <div className={`req-item ${rules.lower ? 'valid' : ''}`}>
+                <span className="req-icon">{rules.lower ? '✓' : '○'}</span>
+                <span>Al menos 1 letra minúscula (a-z)</span>
+              </div>
+              <div className={`req-item ${rules.number ? 'valid' : ''}`}>
+                <span className="req-icon">{rules.number ? '✓' : '○'}</span>
+                <span>Al menos 1 número (0-9)</span>
+              </div>
+              <div className={`req-item ${rules.special ? 'valid' : ''}`}>
+                <span className="req-icon">{rules.special ? '✓' : '○'}</span>
+                <span>Al menos 1 carácter especial (@, $, !, %, *, #, etc.)</span>
+              </div>
+            </div>
+
             <div className="form-group">
-              <label htmlFor="confirm">Confirmar contraseña</label>
+              <label htmlFor="confirm">Confirmar Contraseña</label>
               <input
                 id="confirm"
                 type="password"

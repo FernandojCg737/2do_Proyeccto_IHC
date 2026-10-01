@@ -17,8 +17,11 @@ def register(user_data: UserCreate, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="El correo ya está registrado"
         )
+    full_name = f"{user_data.first_name.strip()} {user_data.last_name.strip()}".strip()
     new_user = User(
-        full_name=user_data.full_name,
+        first_name=user_data.first_name.strip(),
+        last_name=user_data.last_name.strip(),
+        full_name=full_name,
         email=user_data.email,
         hashed_password=hash_password(user_data.password)
     )

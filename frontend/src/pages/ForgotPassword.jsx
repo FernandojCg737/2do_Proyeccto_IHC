@@ -14,6 +14,16 @@ export default function ForgotPassword() {
   const { forgotPassword, resetPassword } = useAuth()
   const navigate = useNavigate()
 
+  const rules = {
+    length: newPassword.length >= 8,
+    upper: /[A-Z]/.test(newPassword),
+    lower: /[a-z]/.test(newPassword),
+    number: /\d/.test(newPassword),
+    special: /[!@#$%^&*(),.?":{}|<>_\-+=[\]\\/~`]/.test(newPassword),
+  }
+
+  const isPasswordValid = Object.values(rules).every(Boolean)
+
   const handleVerifyEmail = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -31,22 +41,30 @@ export default function ForgotPassword() {
 
   const handleResetPassword = async (e) => {
     e.preventDefault()
+
+    if (!isPasswordValid) {
+      setError('La nueva contraseña debe cumplir con todos los requisitos de seguridad')
+      return
+    }
+
     if (newPassword !== confirm) {
       setError('Las contraseñas no coinciden')
       return
     }
-    if (newPassword.length < 6) {
-      setError('La contraseña debe tener al menos 6 caracteres')
-      return
-    }
+
     setLoading(true)
     setError('')
     try {
       await resetPassword(email, newPassword)
-      setMessage('¡Contraseña actualizada! Redirigiendo al login...')
+      setMessage('¡Contraseña actualizada con éxito! Redirigiendo al inicio de sesión...')
       setTimeout(() => navigate('/login'), 2000)
     } catch (err) {
-      setError(err.response?.data?.detail || 'Error al cambiar contraseña')
+      const detail = err.response?.data?.detail
+      if (Array.isArray(detail)) {
+        setError(detail.map(d => d.msg).join(', '))
+      } else {
+        setError(detail || 'Error al cambiar contraseña')
+      }
     } finally {
       setLoading(false)
     }
@@ -81,7 +99,7 @@ export default function ForgotPassword() {
           {step === 1 && (
             <form onSubmit={handleVerifyEmail} className="auth-form">
               <div className="form-group">
-                <label htmlFor="fp-email">Correo electrónico</label>
+                <label htmlFor="fp-email">Correo Electrónico</label>
                 <input
                   id="fp-email"
                   type="email"
@@ -100,18 +118,44 @@ export default function ForgotPassword() {
           {step === 2 && (
             <form onSubmit={handleResetPassword} className="auth-form">
               <div className="form-group">
-                <label htmlFor="new-pass">Nueva contraseña</label>
+                <label htmlFor="new-pass">Nueva Contraseña</label>
                 <input
                   id="new-pass"
                   type="password"
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="••••••••"
                   value={newPassword}
                   onChange={(e) => { setNewPassword(e.target.value); setError('') }}
                   required
+                  autoComplete="new-password"
                 />
               </div>
+
+              {/* Checklist de requisitos de contraseña */}
+              <div className="password-requirements">
+                <div className={`req-item ${rules.length ? 'valid' : ''}`}>
+                  <span className="req-icon">{rules.length ? '✓' : '○'}</span>
+                  <span>Al menos 8 caracteres</span>
+                </div>
+                <div className={`req-item ${rules.upper ? 'valid' : ''}`}>
+                  <span className="req-icon">{rules.upper ? '✓' : '○'}</span>
+                  <span>Al menos 1 letra mayúscula (A-Z)</span>
+                </div>
+                <div className={`req-item ${rules.lower ? 'valid' : ''}`}>
+                  <span className="req-icon">{rules.lower ? '✓' : '○'}</span>
+                  <span>Al menos 1 letra minúscula (a-z)</span>
+                </div>
+                <div className={`req-item ${rules.number ? 'valid' : ''}`}>
+                  <span className="req-icon">{rules.number ? '✓' : '○'}</span>
+                  <span>Al menos 1 número (0-9)</span>
+                </div>
+                <div className={`req-item ${rules.special ? 'valid' : ''}`}>
+                  <span className="req-icon">{rules.special ? '✓' : '○'}</span>
+                  <span>Al menos 1 carácter especial (@, $, !, %, *, #, etc.)</span>
+                </div>
+              </div>
+
               <div className="form-group">
-                <label htmlFor="new-confirm">Confirmar contraseña</label>
+                <label htmlFor="new-confirm">Confirmar Contraseña</label>
                 <input
                   id="new-confirm"
                   type="password"
@@ -119,8 +163,10 @@ export default function ForgotPassword() {
                   value={confirm}
                   onChange={(e) => { setConfirm(e.target.value); setError('') }}
                   required
+                  autoComplete="new-password"
                 />
               </div>
+
               <button type="submit" className="btn-auth" disabled={loading}>
                 {loading ? <span className="btn-spinner"></span> : 'Cambiar contraseña'}
               </button>

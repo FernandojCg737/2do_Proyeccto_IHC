@@ -4,9 +4,13 @@ from app.database import engine, SessionLocal
 from app import models
 from app.routers import auth, subjects
 from app.routers.subjects import seed_subjects_in_db
+from app.triggers import setup_triggers
 
 # Crear tablas automáticamente al iniciar
 models.Base.metadata.create_all(bind=engine)
+
+# Configurar triggers de PostgreSQL (auto-actualización de full_name y updated_at)
+setup_triggers()
 
 # Auto-poblar las 53 materias de la carrera en PostgreSQL
 try:
@@ -14,6 +18,7 @@ try:
         seed_subjects_in_db(db)
 except Exception as e:
     print(f"Advertencia al poblar materias: {e}")
+
 
 app = FastAPI(
     title="StudyMatch API",

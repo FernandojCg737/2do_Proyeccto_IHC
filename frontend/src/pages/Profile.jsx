@@ -5,10 +5,19 @@ import ThemeToggle from '../components/ThemeToggle'
 import '../styles/Profile.css'
 
 export default function Profile() {
-  const { user, logout, changePassword, refreshUser } = useAuth()
+  const { user, logout, changePassword, refreshUser, updateProfile } = useAuth()
   const navigate = useNavigate()
 
-  // Form states
+  // Profile edit states
+  const [isEditing, setIsEditing] = useState(false)
+  const [editFirstName, setEditFirstName] = useState('')
+  const [editLastName, setEditLastName] = useState('')
+  const [editEmail, setEditEmail] = useState('')
+  const [editLoading, setEditLoading] = useState(false)
+  const [profileSuccessMsg, setProfileSuccessMsg] = useState('')
+  const [profileErrorMsg, setProfileErrorMsg] = useState('')
+
+  // Password change states
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -26,6 +35,49 @@ export default function Profile() {
   useEffect(() => {
     refreshUser()
   }, [])
+
+  const handleStartEdit = () => {
+    setEditFirstName(user?.first_name || '')
+    setEditLastName(user?.last_name || '')
+    setEditEmail(user?.email || '')
+    setProfileSuccessMsg('')
+    setProfileErrorMsg('')
+    setIsEditing(true)
+  }
+
+  const handleCancelEdit = () => {
+    setIsEditing(false)
+    setProfileErrorMsg('')
+  }
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault()
+    setProfileSuccessMsg('')
+    setProfileErrorMsg('')
+
+    if (!editFirstName.trim() || !editLastName.trim()) {
+      setProfileErrorMsg('Nombres y apellidos son requeridos')
+      return
+    }
+
+    if (!editEmail.trim()) {
+      setProfileErrorMsg('El correo electrónico es requerido')
+      return
+    }
+
+    setEditLoading(true)
+    try {
+      await updateProfile(editFirstName.trim(), editLastName.trim(), editEmail.trim())
+      setProfileSuccessMsg('¡Datos actualizados exitosamente! El trigger de PostgreSQL recalculó tu nombre completo.')
+      setIsEditing(false)
+    } catch (err) {
+      const msg = err?.response?.data?.detail || 'Error al actualizar el perfil'
+      setProfileErrorMsg(msg)
+    } finally {
+      setEditLoading(false)
+    }
+  }
+
 
   // Reglas de validación en tiempo real para la nueva contraseña
   const passwordChecks = useMemo(() => {
@@ -209,48 +261,151 @@ export default function Profile() {
             </div>
 
             <div className="profile-fields-list">
-              <h3 className="fields-section-title">Datos Registrados</h3>
-
-              <div className="info-grid">
-                <div className="info-box">
-                  <span className="info-label">Nombres</span>
-                  <span className="info-val">{user?.first_name || 'No especificado'}</span>
-                </div>
-
-                <div className="info-box">
-                  <span className="info-label">Apellidos</span>
-                  <span className="info-val">{user?.last_name || 'No especificado'}</span>
-                </div>
-
-                <div className="info-box">
-                  <span className="info-label">Nombre Completo</span>
-                  <span className="info-val">{user?.full_name || 'No especificado'}</span>
-                </div>
-
-                <div className="info-box">
-                  <span className="info-label">Correo Institucional / Personal</span>
-                  <span className="info-val email-highlight">{user?.email || '—'}</span>
-                </div>
-
-                <div className="info-box">
-                  <span className="info-label">Estado de Cuenta</span>
-                  <span className="info-val text-success">
-                    {user?.is_active ? 'Habilitada para estudio' : 'Inactiva'}
-                  </span>
-                </div>
-
-                <div className="info-box">
-                  <span className="info-label">Fecha de Registro</span>
-                  <span className="info-val">{formattedDate}</span>
-                </div>
+              <div className="fields-header-row">
+                <h3 className="fields-section-title">Datos Registrados</h3>
+                {!isEditing && (
+                  <button
+                    type="button"
+                    className="btn-edit-profile-trigger"
+                    onClick={handleStartEdit}
+                  >
+                    ✏️ Editar Datos
+                  </button>
+                )}
               </div>
 
-              <div className="profile-note-box">
-                <span className="note-icon">💡</span>
-                <p>
-                  Tus datos corresponden al registro oficial de <strong>StudyMatch</strong> para coordinar grupos de estudio en las 53 materias de la carrera.
-                </p>
-              </div>
+              {profileSuccessMsg && (
+                <div className="feedback-alert alert-success">
+                  <span className="alert-icon">✓</span>
+                  <div>
+                    <strong>¡Actualizado!</strong>
+                    <p>{profileSuccessMsg}</p>
+                  </div>
+                </div>
+              )}
+
+              {profileErrorMsg && (
+                <div className="feedback-alert alert-danger">
+                  <span className="alert-icon">⚠️</span>
+                  <div>
+                    <strong>Error:</strong>
+                    <p>{profileErrorMsg}</p>
+                  </div>
+                </div>
+              )}
+
+              {isEditing ? (
+                <form onSubmit={handleSaveProfile} className="edit-profile-form">
+                  <div className="edit-form-grid">
+                    <div className="form-group">
+                      <label htmlFor="editFirstName">Nombres *</label>
+                      <input
+                        id="editFirstName"
+                        type="text"
+                        value={editFirstName}
+                        onChange={(e) => setEditFirstName(e.target.value)}
+                        placeholder="Tus nombres"
+                        required
+                        autoFocus
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="editLastName">Apellidos *</label>
+                      <input
+                        id="editLastName"
+                        type="text"
+                        value={editLastName}
+                        onChange={(e) => setEditLastName(e.target.value)}
+                        placeholder="Tus apellidos"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="editEmail">Correo Institucional / Personal *</label>
+                    <input
+                      id="editEmail"
+                      type="email"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                      placeholder="tucorreo@uagrm.edu.bo"
+                      required
+                    />
+                  </div>
+
+                  <div className="trigger-badge-banner">
+                    <span className="trigger-icon">⚡</span>
+                    <div>
+                      <strong>Trigger de PostgreSQL Activo:</strong>
+                      <p>
+                        Al guardar, el trigger <code>trg_update_user_profile</code> en PostgreSQL recalcula automáticamente tu <code>full_name</code> y actualiza tu fecha de modificación <code>updated_at</code>.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="edit-form-actions">
+                    <button
+                      type="button"
+                      className="btn-cancel-edit"
+                      onClick={handleCancelEdit}
+                      disabled={editLoading}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="btn-save-profile"
+                      disabled={editLoading || !editFirstName.trim() || !editLastName.trim() || !editEmail.trim()}
+                    >
+                      {editLoading ? 'Guardando...' : '✓ Guardar Cambios'}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <>
+                  <div className="info-grid">
+                    <div className="info-box">
+                      <span className="info-label">Nombres</span>
+                      <span className="info-val">{user?.first_name || 'No especificado'}</span>
+                    </div>
+
+                    <div className="info-box">
+                      <span className="info-label">Apellidos</span>
+                      <span className="info-val">{user?.last_name || 'No especificado'}</span>
+                    </div>
+
+                    <div className="info-box">
+                      <span className="info-label">Nombre Completo</span>
+                      <span className="info-val">{user?.full_name || 'No especificado'}</span>
+                    </div>
+
+                    <div className="info-box">
+                      <span className="info-label">Correo Institucional / Personal</span>
+                      <span className="info-val email-highlight">{user?.email || '—'}</span>
+                    </div>
+
+                    <div className="info-box">
+                      <span className="info-label">Estado de Cuenta</span>
+                      <span className="info-val text-success">
+                        {user?.is_active ? 'Habilitada para estudio' : 'Inactiva'}
+                      </span>
+                    </div>
+
+                    <div className="info-box">
+                      <span className="info-label">Fecha de Registro</span>
+                      <span className="info-val">{formattedDate}</span>
+                    </div>
+                  </div>
+
+                  <div className="profile-note-box">
+                    <span className="note-icon">💡</span>
+                    <p>
+                      Tus datos corresponden al registro oficial de <strong>StudyMatch</strong> para coordinar grupos de estudio en las 53 materias de la carrera.
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
           </section>
 

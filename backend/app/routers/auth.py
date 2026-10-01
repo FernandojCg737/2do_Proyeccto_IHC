@@ -12,6 +12,7 @@ from app.schemas import (
     PasswordChange,
     UserResponse,
     ChangePasswordRequest,
+    UserProfileUpdate,
 )
 from app.security import hash_password, verify_password, create_access_token, decode_token
 
@@ -145,4 +146,34 @@ def change_password(
     current_user.hashed_password = hash_password(data.new_password)
     db.commit()
     return {"message": "¡Contraseña actualizada exitosamente!"}
+
+
+@router.put("/profile", response_model=UserResponse)
+def update_profile(
+    profile_data: UserProfileUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Actualiza la información del estudiante (Nombres, Apellidos y Correo).
+    El trigger de PostgreSQL 'trg_update_user_profile' actualiza automáticamente full_name y updated_at.
+    """
+    new_email = profile_data.email.strip().lower()
+    if new_email != current_user.email.lower():
+        existing = db.query(User).filter(User.email == new_email).first()
+        if existing and existing.id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El correo electrónico ingresado ya pertenece a otra cuenta",
+            )
+        current_user.email = new_email
+
+    current_user.first_name = profile_data.first_name.strip()
+    current_user.last_name = profile_data.last_name.strip()
+
+    # El trigger trg_update_user_profile BEFORE UPDATE en PostgreSQL sincroniza full_name y updated_at
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
 

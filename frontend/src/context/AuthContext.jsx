@@ -67,6 +67,13 @@ export function AuthProvider({ children }) {
     }
   }
 
+  const updateProfile = async (first_name, last_name, email) => {
+    const res = await api.put('/auth/profile', { first_name, last_name, email })
+    localStorage.setItem('user', JSON.stringify(res.data))
+    setUser(res.data)
+    return res.data
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -79,6 +86,7 @@ export function AuthProvider({ children }) {
         resetPassword,
         changePassword,
         refreshUser,
+        updateProfile,
       }}
     >
       {children}

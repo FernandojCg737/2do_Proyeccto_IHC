@@ -42,9 +42,11 @@ class UserResponse(BaseModel):
     email: str
     is_active: bool
     created_at: datetime | None = None
+    updated_at: datetime | None = None
 
     class Config:
         from_attributes = True
+
 
 
 
@@ -76,6 +78,21 @@ class ChangePasswordRequest(BaseModel):
     @classmethod
     def validate_new_password(cls, v: str) -> str:
         return validate_password_rules(v)
+
+
+class UserProfileUpdate(BaseModel):
+    first_name: str
+    last_name: str
+    email: EmailStr
+
+    @field_validator("first_name", "last_name")
+    @classmethod
+    def validate_names(cls, v: str) -> str:
+        v_stripped = v.strip()
+        if len(v_stripped) < 2:
+            raise ValueError("El campo debe tener al menos 2 caracteres")
+        return v_stripped
+
 
 
 

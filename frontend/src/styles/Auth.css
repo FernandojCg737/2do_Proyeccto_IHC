@@ -35,7 +35,7 @@
 }
 
 .auth-logo {
-  height: clamp(44px, 5vw, 58px);
+  height: clamp(44px, 5vw, 56px);
   width: auto;
   object-fit: contain;
 }
@@ -82,62 +82,73 @@
   right: 20px;
 }
 
-/* Right panel */
+/* ── RIGHT PANEL (100% Centrado en cualquier dispositivo) ── */
 .auth-right {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: clamp(24px, 5vw, 50px) clamp(16px, 4vw, 36px);
+  min-height: 100vh;
+  padding: 70px 20px 30px;
   position: relative;
-  min-width: 0;
   width: 100%;
   box-sizing: border-box;
 }
 
+/* Barra superior fija con Tema e Inicio */
 .auth-top-bar {
   position: absolute;
-  top: 20px;
-  right: 24px;
+  top: 18px;
+  left: 20px;
+  right: 20px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: space-between;
   z-index: 10;
+  max-width: 450px;
+  margin: 0 auto;
 }
 
-/* Mobile brand logo shown when left panel is hidden */
+/* Logo móvil centrado dentro de la tarjeta */
 .auth-mobile-logo {
   display: none;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   justify-content: center;
+  width: 100%;
 }
 
+/* ── CARD (Centrado exacto horizontal y vertical) ── */
 .auth-card {
   width: 100%;
-  max-width: 480px;
+  max-width: 440px;
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: clamp(24px, 5vw, 42px);
+  padding: clamp(26px, 5vw, 38px);
   box-shadow: var(--shadow-lg);
   transition: all 0.3s ease;
   box-sizing: border-box;
-  margin: 40px auto 20px;
+  margin: auto 0;
+  display: flex;
+  flex-direction: column;
 }
 
+/* Títulos y subtítulos centrados */
 .auth-title {
-  font-size: clamp(1.7rem, 4vw, 2.1rem);
+  font-size: clamp(1.75rem, 4vw, 2.1rem);
   font-weight: 800;
   margin-bottom: 8px;
   color: var(--text);
   letter-spacing: -0.02em;
+  text-align: center;
 }
 
 .auth-subtitle {
   color: var(--text-muted);
   font-size: clamp(0.88rem, 2vw, 0.95rem);
-  margin-bottom: 26px;
+  margin-bottom: 24px;
+  text-align: center;
 }
 
 .auth-link {
@@ -195,7 +206,7 @@
   outline: none;
   width: 100%;
   box-sizing: border-box;
-  min-height: 44px; /* WCAG touch target */
+  min-height: 44px;
 }
 
 .form-group input:focus {
@@ -256,6 +267,7 @@
   font-weight: 500;
   animation: shake 0.3s ease;
   word-break: break-word;
+  text-align: center;
 }
 
 [data-theme="dark"] .auth-error {
@@ -272,6 +284,7 @@
   font-size: 0.88rem;
   font-weight: 500;
   word-break: break-word;
+  text-align: center;
 }
 
 [data-theme="dark"] .auth-success {
@@ -304,7 +317,7 @@
   box-shadow: 0 4px 16px rgba(30, 75, 135, 0.25);
   margin-top: 6px;
   width: 100%;
-  min-height: 46px; /* WCAG touch target */
+  min-height: 46px;
 }
 .btn-auth:hover:not(:disabled) {
   transform: translateY(-1px);
@@ -322,33 +335,26 @@
   animation: spin 0.7s linear infinite;
 }
 
-/* ── RESPONSIVE BREAKPOINTS ── */
+/* ── RESPONSIVE BREAKPOINTS (100% CENTRADO EN TODOS LOS DISPOSITIVOS) ── */
 @media (max-width: 900px) {
   .auth-left { display: none; }
   .auth-mobile-logo { display: flex; }
-  .auth-card {
-    margin-top: 50px;
-  }
 }
 
 @media (max-width: 580px) {
   .auth-right {
-    padding: 20px 14px;
-    justify-content: flex-start;
+    padding: 64px 16px 24px;
+    justify-content: center; /* Permanece 100% centrado verticalmente */
   }
   .auth-top-bar {
-    position: relative;
-    top: auto;
-    right: auto;
-    width: 100%;
-    justify-content: space-between;
-    margin-bottom: 12px;
+    top: 14px;
+    left: 16px;
+    right: 16px;
   }
   .auth-card {
-    margin-top: 10px;
-    padding: 24px 16px;
-    box-shadow: none;
-    border-radius: 16px;
+    padding: 24px 18px;
+    border-radius: 18px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
   }
   .form-row {
     grid-template-columns: 1fr;

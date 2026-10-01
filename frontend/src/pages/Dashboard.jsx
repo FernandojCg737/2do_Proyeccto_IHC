@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import ThemeToggle from '../components/ThemeToggle'
 import '../styles/Dashboard.css'
 
 export default function Dashboard() {
@@ -22,26 +23,33 @@ export default function Dashboard() {
     { name: 'Inglés', emoji: '🌎', students: 20, sessions: 5 },
   ]
 
+  const displayName = user?.first_name || user?.full_name?.split(' ')[0] || 'Estudiante'
+  const userInitial = (user?.first_name || user?.full_name || 'U').charAt(0).toUpperCase()
+
   return (
     <div className="dashboard-page">
       {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-brand">
-          <img src="/logo.png" alt="StudyMatch" className="sidebar-logo" />
+          <div className="sidebar-logo-container">
+            <img src="/logo.png" alt="StudyMatch" className="sidebar-logo" />
+          </div>
         </div>
         <nav className="sidebar-nav">
-          <a href="#" className="sidebar-item active">🏠 Dashboard</a>
-          <a href="#" className="sidebar-item">🔍 Buscar compañeros</a>
-          <a href="#" className="sidebar-item">📅 Mis sesiones</a>
-          <a href="#" className="sidebar-item">📚 Mis materias</a>
-          <a href="#" className="sidebar-item">👤 Mi perfil</a>
+          <a href="#" className="sidebar-item active">🏠 <span>Dashboard</span></a>
+          <a href="#" className="sidebar-item">🔍 <span>Buscar compañeros</span></a>
+          <a href="#" className="sidebar-item">📅 <span>Mis sesiones</span></a>
+          <a href="#" className="sidebar-item">📚 <span>Mis materias</span></a>
+          <a href="#" className="sidebar-item">👤 <span>Mi perfil</span></a>
         </nav>
-        <button
-          className="sidebar-logout"
-          onClick={() => setShowLogoutConfirm(true)}
-        >
-          🚪 Cerrar sesión
-        </button>
+        <div className="sidebar-footer">
+          <button
+            className="sidebar-logout"
+            onClick={() => setShowLogoutConfirm(true)}
+          >
+            🚪 <span>Cerrar sesión</span>
+          </button>
+        </div>
       </aside>
 
       {/* Main content */}
@@ -50,12 +58,15 @@ export default function Dashboard() {
         <header className="dashboard-header">
           <div>
             <h1 className="welcome-title">
-              ¡Hola, <span className="user-name">{user?.full_name?.split(' ')[0]}</span>! 👋
+              ¡Hola, <span className="user-name">{displayName}</span>! 👋
             </h1>
-            <p className="welcome-sub">Aquí están tus materias y sesiones disponibles.</p>
+            <p className="welcome-sub">Aquí están tus materias y sesiones disponibles para hoy.</p>
           </div>
-          <div className="header-avatar">
-            {user?.full_name?.charAt(0).toUpperCase()}
+          <div className="dashboard-header-right">
+            <ThemeToggle />
+            <div className="header-avatar" title={user?.full_name || user?.email}>
+              {userInitial}
+            </div>
           </div>
         </header>
 
@@ -86,7 +97,7 @@ export default function Dashboard() {
                 <span>👥 {subject.students} estudiantes</span>
                 <span>📅 {subject.sessions} sesiones</span>
               </div>
-              <button className="btn-join">Unirse</button>
+              <button className="btn-join">Unirse a grupo</button>
             </div>
           ))}
         </div>

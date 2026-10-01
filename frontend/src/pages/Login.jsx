@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import ThemeToggle from '../components/ThemeToggle'
 import '../styles/Auth.css'
 
 export default function Login() {
@@ -31,11 +32,11 @@ export default function Login() {
   return (
     <div className="auth-page">
       <div className="auth-left">
-        <Link to="/">
+        <Link to="/" className="auth-logo-badge">
           <img src="/logo.png" alt="StudyMatch" className="auth-logo" />
         </Link>
         <h2 className="auth-tagline">Bienvenido de vuelta</h2>
-        <p>Conéctate con tus compañeros de estudio.</p>
+        <p>Conéctate con tus compañeros de estudio, materias y grupos de repaso.</p>
         <div className="auth-decorations">
           <div className="deco-circle deco-1"></div>
           <div className="deco-circle deco-2"></div>
@@ -43,6 +44,13 @@ export default function Login() {
       </div>
 
       <div className="auth-right">
+        <div className="auth-top-bar">
+          <ThemeToggle />
+          <Link to="/" className="btn-outline" style={{ padding: '6px 14px', fontSize: '0.82rem' }}>
+            ← Inicio
+          </Link>
+        </div>
+
         <div className="auth-card">
           <h1 className="auth-title">Iniciar sesión</h1>
           <p className="auth-subtitle">

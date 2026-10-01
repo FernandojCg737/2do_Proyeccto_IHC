@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import ThemeToggle from '../components/ThemeToggle'
 import '../styles/Auth.css'
 
 export default function Register() {
@@ -68,11 +69,11 @@ export default function Register() {
   return (
     <div className="auth-page">
       <div className="auth-left">
-        <Link to="/">
+        <Link to="/" className="auth-logo-badge">
           <img src="/logo.png" alt="StudyMatch" className="auth-logo" />
         </Link>
         <h2 className="auth-tagline">Únete a StudyMatch</h2>
-        <p>Miles de estudiantes ya estudian juntos.</p>
+        <p>Crea tu cuenta universitaria y encuentra a los mejores compañeros para tus sesiones de estudio.</p>
         <div className="auth-decorations">
           <div className="deco-circle deco-1"></div>
           <div className="deco-circle deco-2"></div>
@@ -80,6 +81,13 @@ export default function Register() {
       </div>
 
       <div className="auth-right">
+        <div className="auth-top-bar">
+          <ThemeToggle />
+          <Link to="/" className="btn-outline" style={{ padding: '6px 14px', fontSize: '0.82rem' }}>
+            ← Inicio
+          </Link>
+        </div>
+
         <div className="auth-card">
           <h1 className="auth-title">Crear cuenta</h1>
           <p className="auth-subtitle">

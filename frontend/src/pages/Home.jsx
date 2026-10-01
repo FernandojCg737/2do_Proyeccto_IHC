@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import ThemeToggle from '../components/ThemeToggle'
 import '../styles/Home.css'
 
 export default function Home() {
@@ -10,9 +11,12 @@ export default function Home() {
       {/* Navbar */}
       <nav className="home-nav">
         <div className="nav-brand">
-          <img src="/logo.png" alt="StudyMatch Logo" className="nav-logo" />
+          <div className="logo-container">
+            <img src="/logo.png" alt="StudyMatch Logo" className="nav-logo" />
+          </div>
         </div>
         <div className="nav-actions">
+          <ThemeToggle />
           {user ? (
             <Link to="/dashboard" className="btn-primary">Ir al Dashboard</Link>
           ) : (
@@ -68,17 +72,17 @@ export default function Home() {
         <div className="feature-card">
           <div className="feature-icon">🤝</div>
           <h3>Conecta con compañeros</h3>
-          <p>Encuentra estudiantes de tu misma materia y nivel.</p>
+          <p>Encuentra estudiantes de tu misma materia y nivel académico.</p>
         </div>
         <div className="feature-card">
           <div className="feature-icon">📅</div>
           <h3>Organiza sesiones</h3>
-          <p>Agenda sesiones de estudio y recibe recordatorios.</p>
+          <p>Agenda sesiones de estudio en grupo y recibe recordatorios.</p>
         </div>
         <div className="feature-card">
           <div className="feature-icon">🚀</div>
           <h3>Mejora tu rendimiento</h3>
-          <p>Estudiar en grupo mejora la comprensión y retención.</p>
+          <p>Estudiar en equipo potencia el aprendizaje y la comprensión.</p>
         </div>
       </section>
 

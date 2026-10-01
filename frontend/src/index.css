@@ -3,27 +3,70 @@
 /* ── RESET & BASE ── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-:root {
-  --primary: #4f46e5;
-  --primary-dark: #3730a3;
-  --primary-light: #818cf8;
-  --secondary: #06b6d4;
+/* ── MODO CLARO (Default - Identidad StudyMatch) ── */
+:root, [data-theme="light"] {
+  --primary: #1e4b87;          /* Azul Marino de StudyMatch */
+  --primary-dark: #153763;     /* Azul Marino profundo */
+  --primary-light: #00b4d8;    /* Turquesa / Cian vibrante del logo */
+  --secondary: #0284c7;        /* Azul cielo */
+  --accent-warm: #f59e0b;      /* Ámbar cálido del apretón de manos */
+  --accent-orange: #ea580c;
+
   --success: #10b981;
   --danger: #ef4444;
   --warning: #f59e0b;
 
-  --bg: #0f0f1a;
-  --surface: #1a1a2e;
-  --surface2: #16213e;
-  --border: rgba(255,255,255,0.08);
+  --bg: #f8fafc;               /* Fondo claro y limpio */
+  --surface: #ffffff;          /* Tarjetas blancas puras */
+  --surface2: #f1f5f9;         /* Superficie secundaria */
+  --border: #e2e8f0;           /* Bordes suaves */
 
-  --text: #f1f5f9;
-  --text-muted: #94a3b8;
+  --text: #0f172a;             /* Texto oscuro de alto contraste */
+  --text-muted: #64748b;       /* Texto secundario gris pizarra */
 
   --radius: 12px;
   --radius-lg: 20px;
-  --shadow: 0 4px 24px rgba(0,0,0,0.4);
-  --shadow-glow: 0 0 40px rgba(79,70,229,0.2);
+  --shadow: 0 4px 20px rgba(30, 75, 135, 0.08);
+  --shadow-lg: 0 10px 30px rgba(30, 75, 135, 0.12);
+  --shadow-glow: 0 0 30px rgba(0, 180, 216, 0.18);
+
+  --nav-bg: rgba(255, 255, 255, 0.9);
+  --card-hero-bg: #ffffff;
+  --logo-pill-bg: transparent;
+  --logo-pill-border: transparent;
+  --input-bg: #ffffff;
+}
+
+/* ── MODO OSCURO (Deep Oceanic Navy) ── */
+[data-theme="dark"] {
+  --primary: #38bdf8;          /* Cian / Sky contrastante */
+  --primary-dark: #0284c7;
+  --primary-light: #7dd3fc;
+  --secondary: #00b4d8;
+  --accent-warm: #fbbf24;
+  --accent-orange: #f97316;
+
+  --success: #34d399;
+  --danger: #f87171;
+  --warning: #fbbf24;
+
+  --bg: #091124;               /* Azul marino noche profundo */
+  --surface: #0f1d38;          /* Superficie navy elegante */
+  --surface2: #142446;
+  --border: rgba(56, 189, 248, 0.16);
+
+  --text: #f8fafc;
+  --text-muted: #94a3b8;
+
+  --shadow: 0 4px 24px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.55);
+  --shadow-glow: 0 0 35px rgba(0, 180, 216, 0.25);
+
+  --nav-bg: rgba(9, 17, 36, 0.88);
+  --card-hero-bg: #0f1d38;
+  --logo-pill-bg: #ffffff;     /* Píldora blanca en dark mode para máxima nitidez */
+  --logo-pill-border: rgba(56, 189, 248, 0.25);
+  --input-bg: #142446;
 }
 
 html { scroll-behavior: smooth; }
@@ -34,6 +77,7 @@ body {
   color: var(--text);
   line-height: 1.6;
   min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* ── LOADING SCREEN ── */
@@ -56,27 +100,86 @@ body {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── GRADIENT TEXT ── */
+/* ── GRADIENT TEXT (Navy to Cyan) ── */
 .gradient-text {
-  background: linear-gradient(135deg, var(--primary-light), var(--secondary));
+  background: linear-gradient(135deg, #1e4b87 0%, #00b4d8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
+[data-theme="dark"] .gradient-text {
+  background: linear-gradient(135deg, #38bdf8 0%, #00b4d8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── LOGO PILL (Protege el logo en cualquier tema) ── */
+.logo-container {
+  display: inline-flex;
+  align-items: center;
+  background: var(--logo-pill-bg);
+  padding: 6px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--logo-pill-border);
+  transition: background-color 0.3s ease;
+}
+
+/* ── THEME TOGGLE BUTTON ── */
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 100px;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--surface);
+  border-color: var(--primary-light);
+  transform: translateY(-1px);
+}
+
+.theme-toggle-icon {
+  font-size: 1rem;
+}
+
 /* ── BUTTONS ── */
 .btn-primary {
-  background: var(--primary);
+  background: #1e4b87;
   color: #fff;
   padding: 10px 22px;
   border-radius: var(--radius);
   text-decoration: none;
   font-weight: 600;
   font-size: 0.9rem;
-  transition: background 0.2s, transform 0.2s;
+  transition: all 0.2s ease;
   display: inline-block;
+  box-shadow: 0 4px 14px rgba(30, 75, 135, 0.25);
 }
-.btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+.btn-primary:hover {
+  background: #153763;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(30, 75, 135, 0.35);
+}
+
+[data-theme="dark"] .btn-primary {
+  background: linear-gradient(135deg, #0284c7, #00b4d8);
+  color: #04101e;
+  font-weight: 700;
+}
+[data-theme="dark"] .btn-primary:hover {
+  filter: brightness(1.1);
+}
 
 .btn-outline {
   background: transparent;
@@ -84,10 +187,14 @@ body {
   padding: 10px 22px;
   border-radius: var(--radius);
   text-decoration: none;
-  font-weight: 500;
+  font-weight: 600;
   font-size: 0.9rem;
-  border: 1px solid var(--border);
-  transition: border-color 0.2s, transform 0.2s;
+  border: 1.5px solid var(--border);
+  transition: all 0.2s ease;
   display: inline-block;
 }
-.btn-outline:hover { border-color: var(--primary-light); transform: translateY(-1px); }
+.btn-outline:hover {
+  border-color: #00b4d8;
+  color: #00b4d8;
+  transform: translateY(-1px);
+}

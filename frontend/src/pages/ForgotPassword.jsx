@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import ThemeToggle from '../components/ThemeToggle'
 import '../styles/Auth.css'
 
 export default function ForgotPassword() {
@@ -73,11 +74,11 @@ export default function ForgotPassword() {
   return (
     <div className="auth-page">
       <div className="auth-left">
-        <Link to="/">
+        <Link to="/" className="auth-logo-badge">
           <img src="/logo.png" alt="StudyMatch" className="auth-logo" />
         </Link>
         <h2 className="auth-tagline">Recupera tu acceso</h2>
-        <p>Te ayudamos a restablecer tu contraseña.</p>
+        <p>Restablece tu contraseña de forma segura para volver a tus grupos de estudio.</p>
         <div className="auth-decorations">
           <div className="deco-circle deco-1"></div>
           <div className="deco-circle deco-2"></div>
@@ -85,6 +86,13 @@ export default function ForgotPassword() {
       </div>
 
       <div className="auth-right">
+        <div className="auth-top-bar">
+          <ThemeToggle />
+          <Link to="/login" className="btn-outline" style={{ padding: '6px 14px', fontSize: '0.82rem' }}>
+            ← Login
+          </Link>
+        </div>
+
         <div className="auth-card">
           <h1 className="auth-title">
             {step === 1 ? 'Recuperar contraseña' : 'Nueva contraseña'}

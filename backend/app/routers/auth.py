@@ -1,5 +1,6 @@
+import base64
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.database import get_db
@@ -175,5 +176,43 @@ def update_profile(
     db.commit()
     db.refresh(current_user)
     return current_user
+
+
+@router.post("/avatar", response_model=UserResponse)
+async def upload_avatar(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Sube y actualiza la foto de perfil del estudiante."""
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El archivo debe ser una imagen válida (PNG, JPG, JPEG, WEBP)",
+        )
+    contents = await file.read()
+    if len(contents) > 5 * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="La imagen no puede exceder 5 MB",
+        )
+    encoded = base64.b64encode(contents).decode("utf-8")
+    current_user.avatar_url = f"data:{file.content_type};base64,{encoded}"
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
+
+@router.delete("/avatar", response_model=UserResponse)
+def remove_avatar(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Elimina la foto de perfil para volver a las iniciales del estudiante."""
+    current_user.avatar_url = None
+    db.commit()
+    db.refresh(current_user)
+    return current_user
+
 
 

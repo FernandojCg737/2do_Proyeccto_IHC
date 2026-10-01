@@ -210,12 +210,28 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.25rem;
+  font-size: 1.05rem;
   font-weight: 800;
   color: #ffffff;
   flex-shrink: 0;
+  overflow: hidden;
+  letter-spacing: 0.02em;
   box-shadow: 0 4px 12px rgba(30, 75, 135, 0.25);
+  transition: transform 0.2s ease;
 }
+
+.header-avatar:hover {
+  transform: scale(1.05);
+}
+
+.header-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+}
+
 
 /* Stats Grid (Auto Layout Grid) */
 .stats-grid {

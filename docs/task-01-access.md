@@ -111,14 +111,17 @@ backend/app/
 Al hacer clic en **"Mi perfil"** desde la barra lateral, el menú móvil o el avatar del estudiante:
 1. **Datos Registrados del Estudiante y Edición en Vivo:**
    - Muestra nombres, apellidos, nombre completo, correo electrónico institucional/personal, estado de la cuenta (activa) y fecha de creación.
-   - Botón **"✏️ Editar Datos"**: Permite editar nombres, apellidos y correo electrónico en un formulario interactivo.
-   - **Trigger en PostgreSQL (`trg_update_user_profile`):** Al guardar los cambios, un disparador (*trigger*) de base de datos concatena automáticamente `first_name` y `last_name` en `full_name`, y actualiza el timestamp `updated_at`.
+   - **Gestión de Foto de Perfil:** Permite subir, cambiar y eliminar una foto de perfil personalizada (`POST /auth/avatar`, `DELETE /auth/avatar`), con vista previa inmediata.
+   - **Iniciales personalizadas automáticas:** Cuando no hay foto de perfil, el avatar muestra la inicial del **primer apellido + primer nombre** (ej: Calani Fernando → **CF**).
+   - Botón **"✏️ Editar Datos"**: Permite editar nombres, apellidos y correo electrónico en un formulario limpio e interactivo.
+   - **Trigger en PostgreSQL (`trg_update_user_profile`):** Al guardar los cambios, el disparador en PostgreSQL concatena silenciosamente `first_name` y `last_name` en `full_name` y actualiza `updated_at`.
 2. **Cambio de Contraseña Seguro:**
    - Requiere la **contraseña actual** para verificar la identidad antes de cualquier cambio.
    - Solicita la **nueva contraseña** con validación visual en vivo de las políticas de seguridad (mínimo 8 caracteres, mayúscula, minúscula, número y símbolo).
    - Solicita la **confirmación** con comprobación de coincidencia.
    - Valida en backend y frontend que la nueva clave sea diferente a la actual.
    - Proporciona retroalimentación inmediata con alertas de éxito o advertencia.
+
 
 
 ---

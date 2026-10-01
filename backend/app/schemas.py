@@ -41,11 +41,13 @@ class UserResponse(BaseModel):
     full_name: str
     email: str
     is_active: bool
+    avatar_url: str | None = None
     created_at: datetime | None = None
     updated_at: datetime | None = None
 
     class Config:
         from_attributes = True
+
 
 
 

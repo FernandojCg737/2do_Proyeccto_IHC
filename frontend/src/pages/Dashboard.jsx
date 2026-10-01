@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import ThemeToggle from '../components/ThemeToggle'
 import api from '../api/axios'
 import { subjectsData } from '../data/subjects'
+import { getStudentInitials } from '../utils/avatar'
 import '../styles/Dashboard.css'
 
 export default function Dashboard() {
@@ -75,7 +76,7 @@ export default function Dashboard() {
 
 
   const displayName = user?.first_name || user?.full_name?.split(' ')[0] || 'Estudiante'
-  const userInitial = (user?.first_name || user?.full_name || 'U').charAt(0).toUpperCase()
+  const studentInitials = useMemo(() => getStudentInitials(user), [user])
 
   return (
     <div className="dashboard-page">
@@ -92,7 +93,11 @@ export default function Dashboard() {
             style={{ cursor: 'pointer' }}
             onClick={() => navigate('/profile')}
           >
-            {userInitial}
+            {user?.avatar_url ? (
+              <img src={user.avatar_url} alt="" className="header-avatar-img" />
+            ) : (
+              studentInitials
+            )}
           </div>
           <button
             className="mobile-logout-btn"
@@ -149,7 +154,11 @@ export default function Dashboard() {
               style={{ cursor: 'pointer' }}
               onClick={() => navigate('/profile')}
             >
-              {userInitial}
+              {user?.avatar_url ? (
+                <img src={user.avatar_url} alt="" className="header-avatar-img" />
+              ) : (
+                studentInitials
+              )}
             </div>
           </div>
         </header>

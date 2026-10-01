@@ -74,6 +74,24 @@ export function AuthProvider({ children }) {
     return res.data
   }
 
+  const uploadAvatar = async (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const res = await api.post('/auth/avatar', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    localStorage.setItem('user', JSON.stringify(res.data))
+    setUser(res.data)
+    return res.data
+  }
+
+  const removeAvatar = async () => {
+    const res = await api.delete('/auth/avatar')
+    localStorage.setItem('user', JSON.stringify(res.data))
+    setUser(res.data)
+    return res.data
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -87,6 +105,8 @@ export function AuthProvider({ children }) {
         changePassword,
         refreshUser,
         updateProfile,
+        uploadAvatar,
+        removeAvatar,
       }}
     >
       {children}

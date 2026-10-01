@@ -1,11 +1,12 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import ThemeToggle from '../components/ThemeToggle'
+import { getStudentInitials } from '../utils/avatar'
 import '../styles/Profile.css'
 
 export default function Profile() {
-  const { user, logout, changePassword, refreshUser, updateProfile } = useAuth()
+  const { user, logout, changePassword, refreshUser, updateProfile, uploadAvatar, removeAvatar } = useAuth()
   const navigate = useNavigate()
 
   // Profile edit states
@@ -16,6 +17,10 @@ export default function Profile() {
   const [editLoading, setEditLoading] = useState(false)
   const [profileSuccessMsg, setProfileSuccessMsg] = useState('')
   const [profileErrorMsg, setProfileErrorMsg] = useState('')
+
+  // Avatar upload states
+  const fileInputRef = useRef(null)
+  const [avatarLoading, setAvatarLoading] = useState(false)
 
   // Password change states
   const [currentPassword, setCurrentPassword] = useState('')
@@ -68,7 +73,7 @@ export default function Profile() {
     setEditLoading(true)
     try {
       await updateProfile(editFirstName.trim(), editLastName.trim(), editEmail.trim())
-      setProfileSuccessMsg('¡Datos actualizados exitosamente! El trigger de PostgreSQL recalculó tu nombre completo.')
+      setProfileSuccessMsg('¡Datos de perfil actualizados exitosamente!')
       setIsEditing(false)
     } catch (err) {
       const msg = err?.response?.data?.detail || 'Error al actualizar el perfil'
@@ -77,6 +82,47 @@ export default function Profile() {
       setEditLoading(false)
     }
   }
+
+  const handleAvatarFileSelect = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      setProfileErrorMsg('Debes seleccionar un archivo de imagen válido (PNG, JPG, WEBP)')
+      return
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setProfileErrorMsg('La imagen seleccionada no debe superar los 5 MB')
+      return
+    }
+
+    setAvatarLoading(true)
+    setProfileErrorMsg('')
+    try {
+      await uploadAvatar(file)
+      setProfileSuccessMsg('¡Foto de perfil actualizada exitosamente!')
+    } catch (err) {
+      setProfileErrorMsg(err?.response?.data?.detail || 'Error al subir la foto de perfil')
+    } finally {
+      setAvatarLoading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const handleRemoveAvatar = async () => {
+    setAvatarLoading(true)
+    setProfileErrorMsg('')
+    try {
+      await removeAvatar()
+      setProfileSuccessMsg('Foto de perfil eliminada. Ahora se muestran tus iniciales.')
+    } catch (err) {
+      setProfileErrorMsg('Error al eliminar la foto')
+    } finally {
+      setAvatarLoading(false)
+    }
+  }
+
 
 
   // Reglas de validación en tiempo real para la nueva contraseña
@@ -145,7 +191,7 @@ export default function Profile() {
     }
   }
 
-  const userInitial = (user?.first_name || user?.full_name || 'U').charAt(0).toUpperCase()
+  const studentInitials = useMemo(() => getStudentInitials(user), [user])
   const displayName = user?.first_name || user?.full_name?.split(' ')[0] || 'Estudiante'
 
   // Formato de fecha legible
@@ -173,7 +219,11 @@ export default function Profile() {
         <div className="mobile-header-actions">
           <ThemeToggle />
           <div className="header-avatar" title={user?.full_name || user?.email}>
-            {userInitial}
+            {user?.avatar_url ? (
+              <img src={user.avatar_url} alt="" className="header-avatar-img" />
+            ) : (
+              studentInitials
+            )}
           </div>
           <button
             className="mobile-logout-btn"
@@ -234,7 +284,11 @@ export default function Profile() {
           <div className="profile-header-right">
             <ThemeToggle />
             <div className="header-avatar" title={user?.full_name || user?.email}>
-              {userInitial}
+              {user?.avatar_url ? (
+                <img src={user.avatar_url} alt="" className="header-avatar-img" />
+              ) : (
+                studentInitials
+              )}
             </div>
           </div>
         </header>
@@ -243,9 +297,52 @@ export default function Profile() {
           {/* Card 1: User Registered Details */}
           <section className="profile-card profile-info-card">
             <div className="profile-badge-banner">
-              <div className="profile-avatar-large">
-                {userInitial}
+              <div className="profile-avatar-wrapper">
+                <div className="profile-avatar-large">
+                  {user?.avatar_url ? (
+                    <img
+                      src={user.avatar_url}
+                      alt={user.full_name}
+                      className="profile-avatar-img"
+                    />
+                  ) : (
+                    <span className="profile-avatar-initials">{studentInitials}</span>
+                  )}
+                  {avatarLoading && <div className="avatar-loading-overlay">⏳</div>}
+                </div>
+
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleAvatarFileSelect}
+                  accept="image/png, image/jpeg, image/webp"
+                  style={{ display: 'none' }}
+                />
+
+                <div className="avatar-action-buttons">
+                  <button
+                    type="button"
+                    className="btn-avatar-camera"
+                    onClick={() => fileInputRef.current?.click()}
+                    title="Subir o cambiar foto de perfil"
+                    disabled={avatarLoading}
+                  >
+                    📷
+                  </button>
+                  {user?.avatar_url && (
+                    <button
+                      type="button"
+                      className="btn-avatar-trash"
+                      onClick={handleRemoveAvatar}
+                      title="Eliminar foto y usar iniciales"
+                      disabled={avatarLoading}
+                    >
+                      🗑️
+                    </button>
+                  )}
+                </div>
               </div>
+
               <div className="profile-banner-details">
                 <h2 className="profile-full-name">{user?.full_name || 'Estudiante'}</h2>
                 <p className="profile-email-sub">{user?.email}</p>
@@ -332,16 +429,6 @@ export default function Profile() {
                       placeholder="tucorreo@uagrm.edu.bo"
                       required
                     />
-                  </div>
-
-                  <div className="trigger-badge-banner">
-                    <span className="trigger-icon">⚡</span>
-                    <div>
-                      <strong>Trigger de PostgreSQL Activo:</strong>
-                      <p>
-                        Al guardar, el trigger <code>trg_update_user_profile</code> en PostgreSQL recalcula automáticamente tu <code>full_name</code> y actualiza tu fecha de modificación <code>updated_at</code>.
-                      </p>
-                    </div>
                   </div>
 
                   <div className="edit-form-actions">

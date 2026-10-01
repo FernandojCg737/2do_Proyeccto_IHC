@@ -1,11 +1,19 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.database import engine
+from app.database import engine, SessionLocal
 from app import models
-from app.routers import auth
+from app.routers import auth, subjects
+from app.routers.subjects import seed_subjects_in_db
 
 # Crear tablas automáticamente al iniciar
 models.Base.metadata.create_all(bind=engine)
+
+# Auto-poblar las 53 materias de la carrera en PostgreSQL
+try:
+    with SessionLocal() as db:
+        seed_subjects_in_db(db)
+except Exception as e:
+    print(f"Advertencia al poblar materias: {e}")
 
 app = FastAPI(
     title="StudyMatch API",
@@ -24,6 +32,8 @@ app.add_middleware(
 
 # Registrar routers
 app.include_router(auth.router)
+app.include_router(subjects.router)
+
 
 
 @app.get("/")

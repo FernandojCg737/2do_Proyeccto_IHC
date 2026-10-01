@@ -63,3 +63,24 @@ class PasswordChange(BaseModel):
     @classmethod
     def validate_new_password(cls, v: str) -> str:
         return validate_password_rules(v)
+
+
+class SubjectBase(BaseModel):
+    code: str
+    name: str
+    area: str
+    emoji: str | None = None
+    students_count: int = 0
+    sessions_count: int = 0
+
+
+class SubjectCreate(SubjectBase):
+    pass
+
+
+class SubjectResponse(SubjectBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+

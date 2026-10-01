@@ -14,3 +14,17 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Subject(Base):
+    __tablename__ = "subjects"
+
+    id = Column(Integer, primary_key=True, index=True)
+    code = Column(String(20), unique=True, index=True, nullable=False)
+    name = Column(String(150), nullable=False)
+    area = Column(String(100), nullable=False)
+    emoji = Column(String(10), nullable=True)
+    students_count = Column(Integer, default=0)
+    sessions_count = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+

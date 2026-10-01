@@ -83,11 +83,13 @@
 frontend/src/
 ├── context/AuthContext.jsx      ← Lógica de sesión global
 ├── components/PrivateRoute.jsx  ← Protección de rutas
-├── pages/Login.jsx              ← Inicio de sesión
-├── pages/Register.jsx           ← Registro
+├── components/ThemeToggle.jsx   ← Switch modo claro / oscuro
+├── data/subjects.js            ← Catálogo oficial de 53 materias de la carrera
+├── pages/Login.jsx              ← Inicio de sesión (centrado responsivo)
+├── pages/Register.jsx           ← Registro de cuenta (validaciones IHC)
 ├── pages/ForgotPassword.jsx     ← Recuperar contraseña
-├── pages/Dashboard.jsx          ← Ruta privada (muestra nombre)
-├── pages/Home.jsx               ← Ruta pública
+├── pages/Dashboard.jsx          ← Ruta privada (53 materias, buscador, filtros)
+├── pages/Home.jsx               ← Ruta pública (hero, CTA, logo de marca)
 └── api/axios.js                 ← Cliente HTTP con token automático
 
 backend/app/
@@ -98,3 +100,11 @@ backend/app/
 ├── security.py                  ← JWT + bcrypt
 └── database.py                  ← Conexión SQLAlchemy
 ```
+
+---
+
+## Catálogo Oficial de Materias Integradas
+El dashboard cuenta con las 53 asignaturas oficiales del plan de estudios de la carrera (desde `MAT101 Cálculo I` hasta `ELC108 Control y Automatización`), incluyendo la materia de este proyecto `ELC106 Interacción Hombre-Computador`.
+- **Búsqueda instantánea:** Filtrado por código o nombre de materia en tiempo real.
+- **Filtros por área:** Programación, Matemáticas, Sistemas, Redes, IA, Software, Electivas.
+- **Interacción de grupos:** Unirse o salir de salas y grupos de estudio con estado visual inmediato.

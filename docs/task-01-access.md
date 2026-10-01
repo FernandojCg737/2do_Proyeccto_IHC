@@ -51,6 +51,15 @@
   - Ámbar cálido de apoyo (`#f59e0b`)
 - **Switch Claro / Oscuro con persistencia en `localStorage`:** Permite al estudiante alternar entre un diseño académico limpio (Modo Claro) y un entorno nocturno relajante para largas sesiones de estudio (Modo Oscuro).
 
+### Diseño 100% Responsivo (Auto Layout & Grillas CSS)
+- **CSS Grid con `auto-fit` y `minmax`:** Las tarjetas de materias, estadísticas y características de estudio se adaptan automáticamente a cualquier resolución (móvil, tablet, escritorio) sin desbordamiento horizontal.
+- **Tipografía fluida con `clamp()`:** Los títulos y textos escalan progresivamente según el tamaño de la pantalla, evitando cortes de texto en dispositivos móviles pequeños (360px).
+- **Adaptabilidad móvil en Dashboard:** 
+  - En pantallas de escritorio: barra lateral completa fija.
+  - En tablets: barra lateral compacta.
+  - En smartphones (< 768px): barra superior pegajosa con logo y cambio de tema, contenido a ancho completo y barra de navegación inferior tipo app móvil (*bottom navigation dock*).
+- **Formularios de autenticación adaptativos:** El panel dividido oculta las decoraciones pesadas en teléfonos y centra la tarjeta con el logo de marca visible y objetivos táctiles accesibles (mínimo 44px).
+
 ---
 
 ## Funcionalidades implementadas

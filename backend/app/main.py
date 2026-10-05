@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, SessionLocal
 from app import models
-from app.routers import auth, subjects
+from app.routers import auth, subjects, sessions
 from app.routers.subjects import seed_subjects_in_db
 from app.triggers import setup_triggers
 
@@ -38,6 +38,7 @@ app.add_middleware(
 # Registrar routers
 app.include_router(auth.router)
 app.include_router(subjects.router)
+app.include_router(sessions.router)
 
 
 

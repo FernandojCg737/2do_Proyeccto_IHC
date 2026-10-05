@@ -134,3 +134,49 @@ class SubjectResponse(SubjectBase):
     class Config:
         from_attributes = True
 
+
+# ── SESIONES ──────────────────────────────────────────────
+import datetime as dt
+
+class SessionCreate(BaseModel):
+    name: str
+    date: dt.date
+    modality: str
+    spots: int
+    status: str = "abierta"
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) < 3:
+            raise ValueError("El nombre debe tener al menos 3 caracteres")
+        return v
+
+    @field_validator("spots")
+    @classmethod
+    def validate_spots(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("Los cupos deben ser al menos 1")
+        return v
+
+
+class SessionStatusUpdate(BaseModel):
+    status: str
+
+
+class SessionResponse(BaseModel):
+    id: int
+    name: str
+    date: dt.date
+    modality: str
+    spots: int
+    status: str = "abierta"
+    creator_id: int | None = None
+    creator_name: str | None = None
+    creator_email: str | None = None
+    created_at: datetime | None = None
+
+    class Config:
+        from_attributes = True
+

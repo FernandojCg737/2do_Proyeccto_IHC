@@ -97,6 +97,39 @@ npm run dev
 
 ---
 
+---
+
+## 🧪 Pruebas Unitarias (Task 02 – Regla de Cambio de Estado)
+
+El proyecto incluye una suite de pruebas unitarias que valida la máquina de estados y las reglas de negocio para el ciclo de vida de las **Sesiones de Estudio** (`Inscripción abierta -> cerrada`, Acción: *"Cerrar inscripciones"*).
+
+### Casos de prueba evaluados:
+1. **`test_01_estado_inicial_es_correcto`**: El estado inicial de la sesión es `'abierta'`.
+2. **`test_02_accion_realiza_transicion_esperada`**: La acción `close_registration()` realiza la transición exitosa de `'abierta'` a `'cerrada'`.
+3. **`test_03_transicion_invalida_se_rechaza`**: Intentar cerrar una sesión que ya se encuentra cerrada se rechaza lanzando un `ValueError`.
+4. **`test_04_demas_datos_del_elemento_se_conservan`**: Tras el cambio de estado, todos los atributos (`name`, `date`, `modality`, `spots`, etc.) se conservan intactos.
+
+### Comandos de ejecución:
+
+#### Opción 1: Ejecutar con Pytest (Recomendado)
+```bash
+cd backend
+python -m pytest -v
+```
+
+#### Opción 2: Ejecutar con Unittest nativo de Python (sin dependencias adicionales)
+```bash
+cd backend
+python -m unittest discover -s tests -v
+```
+
+#### Opción 3: Ejecutar dentro del contenedor Docker
+```bash
+docker exec -it studymatch_backend python -m pytest -v
+```
+
+---
+
 ## 📁 Estructura del proyecto
 
 ```
@@ -104,19 +137,25 @@ Segundo Proyecto/
 ├── frontend/          # React + Vite
 │   └── src/
 │       ├── api/       # Configuración Axios
-│       ├── components/# PrivateRoute
+│       ├── components/# PrivateRoute, ThemeToggle, LogoutIcon
 │       ├── context/   # AuthContext (estado global)
-│       ├── pages/     # Home, Login, Register, ForgotPassword, Dashboard
-│       └── styles/    # CSS por página
+│       ├── pages/     # Home, Login, Register, ForgotPassword, Dashboard, Profile
+│       └── styles/    # CSS por página (Dashboard.css, Auth.css, etc.)
 ├── backend/           # FastAPI
+│   ├── tests/         # Pruebas unitarias
+│   │   ├── __init__.py
+│   │   └── test_session_state.py # 4 pruebas unitarias de cambio de estado
 │   └── app/
-│       ├── routers/   # auth.py
+│       ├── routers/   # auth.py, subjects.py, sessions.py
 │       ├── main.py    # Entrada de la API
-│       ├── models.py  # Modelos SQLAlchemy
-│       ├── schemas.py # Pydantic schemas
+│       ├── models.py  # Modelos SQLAlchemy (User, Subject, Session)
+│       ├── schemas.py # Pydantic schemas (SessionCreate, SessionResponse, etc.)
 │       ├── security.py# JWT + bcrypt
-│       └── database.py# Conexión PostgreSQL
+│       ├── database.py# Conexión PostgreSQL
+│       └── triggers.py# Triggers y migraciones DDL PostgreSQL
 └── docs/
     ├── project-card.md
-    └── task-01-access.md
+    ├── task-01-access.md
+    └── task-02-state-tests.md
 ```
+

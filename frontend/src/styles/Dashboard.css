@@ -776,4 +776,535 @@
   .subjects-grid {
     grid-template-columns: 1fr;
   }
+  .sessions-grid {
+    grid-template-columns: 1fr;
+  }
 }
+
+/* ═══════════════════════════════════════════
+   SECCIÓN SESIONES DE ESTUDIO
+═══════════════════════════════════════════ */
+.sessions-section {
+  margin-bottom: 48px;
+}
+
+.sessions-header-bar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+/* Botón "Crear Sesión" */
+.btn-create-session {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  transition: all 0.22s ease;
+  white-space: nowrap;
+}
+.btn-create-session:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  filter: brightness(1.08);
+}
+.btn-create-session:active {
+  transform: translateY(0);
+}
+
+/* ── MODAL OVERLAY ── */
+.session-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 20px;
+  animation: fadeInOverlay 0.2s ease;
+}
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── MODAL BOX ── */
+.session-modal {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 32px 28px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: var(--shadow-lg);
+  animation: slideUpModal 0.25s ease;
+}
+@keyframes slideUpModal {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.session-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.session-modal-header h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.session-modal-close {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.session-modal-close:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+/* ── FORMULARIO ── */
+.session-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.session-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.session-form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.session-form-group input,
+.session-form-group select {
+  padding: 11px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--input-bg, var(--surface2));
+  color: var(--text);
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+.session-form-group input:focus,
+.session-form-group select:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(30,75,135,0.12);
+}
+.session-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.session-form-error {
+  font-size: 0.87rem;
+  color: var(--danger);
+  background: rgba(239,68,68,0.08);
+  border: 1px solid rgba(239,68,68,0.25);
+  border-radius: var(--radius);
+  padding: 9px 12px;
+}
+.session-form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 4px;
+}
+
+/* Botón Guardar */
+.btn-save-session {
+  padding: 11px 26px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-light));
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-save-session:hover:not(:disabled) {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+.btn-save-session:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ── GRID DE SESIONES ── */
+.sessions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+/* ── TARJETA DE SESIÓN ── */
+.session-card {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 22px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--shadow);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  animation: fadeInCard 0.3s ease;
+}
+@keyframes fadeInCard {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.session-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--primary);
+}
+
+.session-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Badges de modalidad */
+.session-modality-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.modality-presencial {
+  background: rgba(16,185,129,0.15);
+  color: #10b981;
+  border: 1px solid rgba(16,185,129,0.3);
+}
+.modality-virtual {
+  background: rgba(56,189,248,0.15);
+  color: #0284c7;
+  border: 1px solid rgba(56,189,248,0.3);
+}
+.modality-hibrida {
+  background: rgba(245,158,11,0.15);
+  color: #d97706;
+  border: 1px solid rgba(245,158,11,0.3);
+}
+
+.session-date {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.session-name {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.35;
+}
+.session-spots {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+.session-spots strong {
+  color: var(--primary);
+}
+
+/* Placeholder vacío */
+.no-sessions-placeholder {
+  text-align: center;
+  padding: 48px 24px;
+  background: var(--surface);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-lg);
+  color: var(--text-muted);
+}
+.no-sessions-icon {
+  font-size: 3rem;
+  display: block;
+  margin-bottom: 12px;
+}
+.no-sessions-placeholder h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.no-sessions-placeholder p {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* ── ESTILOS DE ESTADO Y ACCIONES DE SESIÓN (TASK 02) ── */
+
+/* Estadísticas de estado */
+.stat-value.stat-open {
+  background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.stat-value.stat-closed {
+  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Badge de estado */
+.session-status-badge {
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-transform: uppercase;
+}
+
+.session-status-badge.status-open {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
+[data-theme="dark"] .session-status-badge.status-open {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.4);
+}
+
+.session-status-badge.status-closed {
+  background: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+[data-theme="dark"] .session-status-badge.status-closed {
+  background: rgba(239, 68, 68, 0.18);
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+/* Modificación visual de la tarjeta cuando está cerrada */
+.session-card-closed {
+  opacity: 0.88;
+  border-color: rgba(239, 68, 68, 0.25);
+  background: linear-gradient(180deg, var(--surface) 0%, rgba(239, 68, 68, 0.03) 100%);
+}
+
+.session-card-closed:hover {
+  border-color: rgba(239, 68, 68, 0.45);
+}
+
+/* Footer de la tarjeta */
+.session-card-footer {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+/* Botón "Cerrar inscripciones" */
+.btn-close-registration {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1.5px solid rgba(239, 68, 68, 0.35);
+  color: #dc2626;
+  border-radius: var(--radius);
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.86rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+[data-theme="dark"] .btn-close-registration {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.35);
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.btn-close-registration:hover:not(:disabled) {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-close-registration:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Aviso cuando las inscripciones están cerradas */
+.session-closed-notice {
+  text-align: center;
+  padding: 9px 12px;
+  background: var(--surface2);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Notificación flotante (Toast) */
+.session-toast {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 1000;
+  padding: 14px 18px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  max-width: 420px;
+  animation: slideToast 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideToast {
+  from {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.toast-success {
+  background: #064e3b;
+  color: #ecfdf5;
+  border: 1.5px solid #10b981;
+}
+
+.toast-error {
+  background: #7f1d1d;
+  color: #fef2f2;
+  border: 1.5px solid #ef4444;
+}
+
+.toast-icon {
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.toast-text {
+  flex: 1;
+  line-height: 1.4;
+}
+
+.toast-close {
+  background: transparent;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  opacity: 0.75;
+  transition: opacity 0.15s;
+}
+
+.toast-close:hover {
+  opacity: 1;
+}
+
+@media (max-width: 767px) {
+  .session-toast {
+    left: 16px;
+    right: 16px;
+    top: 76px;
+    max-width: none;
+  }
+}
+
+/* Tag de creador/organizador de la sesión */
+.session-creator-tag {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  background: var(--surface2);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  display: inline-block;
+  width: fit-content;
+}
+
+.session-creator-tag strong {
+  color: var(--text);
+}
+
+/* Aviso para estudiantes que no son el creador */
+.session-guest-notice {
+  text-align: center;
+  padding: 9px 12px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: var(--radius);
+  color: #059669;
+  font-size: 0.82rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+[data-theme="dark"] .session-guest-notice {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.3);
+}
+
+

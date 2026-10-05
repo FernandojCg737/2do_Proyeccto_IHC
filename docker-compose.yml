@@ -41,6 +41,9 @@ services:
       SECRET_KEY: studymatch_jwt_secret_key_2026_ihc_proyecto2
       ALGORITHM: HS256
       ACCESS_TOKEN_EXPIRE_MINUTES: 60
+      MAIL_USERNAME: fcalani38@gmail.com
+      MAIL_PASSWORD: sudogasvrfmripoj
+
     ports:
       - "8000:8000"
     depends_on:

@@ -4,6 +4,15 @@ from app.database import engine
 CREATE_TRIGGERS_SQL = """
 ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT now();
 
+-- Garantizar que la tabla sessions cuente con la columna 'status' para transiciones de estado
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS status VARCHAR(30) DEFAULT 'abierta';
+UPDATE sessions SET status = 'abierta' WHERE status IS NULL;
+
+-- Garantizar que la tabla sessions cuente con los campos del creador
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS creator_id INTEGER;
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS creator_name VARCHAR(150);
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS creator_email VARCHAR(150);
+
 CREATE OR REPLACE FUNCTION update_user_profile_trigger()
 RETURNS TRIGGER AS $$
 BEGIN

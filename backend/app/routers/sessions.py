@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session as DBSession
 from app.database import get_db
 from app.models import Session, User
-from app.schemas import SessionCreate, SessionResponse, SessionStatusUpdate
+from app.schemas import SessionCreate, SessionResponse, SessionStatusUpdate, SessionUpdate
 from app.routers.auth import get_current_user
 
 router = APIRouter(prefix="/sessions", tags=["Sesiones"])
@@ -148,5 +148,127 @@ def update_session_status(
     db.commit()
     db.refresh(session)
     return session
+
+
+@router.put("/{session_id}", response_model=SessionResponse)
+def update_session(
+    session_id: int,
+    data: SessionUpdate,
+    db: DBSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    1. Editar: Los datos del elemento (nombre, fecha, modalidad, cupos).
+    Solo el creador puede editar los datos de su sesión.
+    """
+    session = db.query(Session).filter(Session.id == session_id).first()
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sesión no encontrada"
+        )
+
+    is_creator = False
+    if session.creator_email and current_user.email:
+        is_creator = session.creator_email.strip().lower() == current_user.email.strip().lower()
+    elif session.creator_id and current_user.id:
+        is_creator = int(session.creator_id) == int(current_user.id)
+
+    if not is_creator:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No autorizado: Solo el creador puede editar los datos de su sesión."
+        )
+
+    if data.name is not None:
+        session.name = data.name
+    if data.date is not None:
+        session.date = data.date
+    if data.modality is not None:
+        session.modality = data.modality
+    if data.spots is not None:
+        if data.spots < session.participants_count:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Los cupos ({data.spots}) no pueden ser menores a los participantes ya inscritos ({session.participants_count})."
+            )
+        session.spots = data.spots
+
+    if data.status is not None:
+        if data.status not in ["abierta", "cerrada"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Estado inválido. Solo se permite 'abierta' o 'cerrada'."
+            )
+        session.status = data.status
+
+    db.commit()
+    db.refresh(session)
+    return session
+
+
+@router.delete("/{session_id}", status_code=status.HTTP_200_OK)
+def delete_session(
+    session_id: int,
+    db: DBSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    2. Eliminar: Elimina la sesión solicitando confirmación previa en la UI.
+    Solo el creador puede eliminar su sesión.
+    """
+    session = db.query(Session).filter(Session.id == session_id).first()
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sesión no encontrada"
+        )
+
+    is_creator = False
+    if session.creator_email and current_user.email:
+        is_creator = session.creator_email.strip().lower() == current_user.email.strip().lower()
+    elif session.creator_id and current_user.id:
+        is_creator = int(session.creator_id) == int(current_user.id)
+
+    if not is_creator:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="No autorizado: Solo el creador puede eliminar su sesión."
+        )
+
+    db.delete(session)
+    db.commit()
+    return {"message": "Sesión eliminada exitosamente", "id": session_id}
+
+
+@router.post("/{session_id}/join", response_model=SessionResponse)
+def join_session(
+    session_id: int,
+    db: DBSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    3. Aplicar una restricción según su estado:
+    Directriz de STUDYMATCH: Una sesión cerrada no acepta nuevos participantes.
+    """
+    session = db.query(Session).filter(Session.id == session_id).first()
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Sesión no encontrada"
+        )
+
+    try:
+        session.register_participant(user_email=current_user.email)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+
+    db.commit()
+    db.refresh(session)
+    return session
+
 
 

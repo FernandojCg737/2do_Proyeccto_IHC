@@ -165,12 +165,44 @@ class SessionStatusUpdate(BaseModel):
     status: str
 
 
+class SessionUpdate(BaseModel):
+    name: str | None = None
+    date: dt.date | None = None
+    modality: str | None = None
+    spots: int | None = None
+    status: str | None = None
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str | None) -> str | None:
+        if v is not None:
+            v = v.strip()
+            if len(v) < 3:
+                raise ValueError("El nombre debe tener al menos 3 caracteres")
+        return v
+
+    @field_validator("spots")
+    @classmethod
+    def validate_spots(cls, v: int | None) -> int | None:
+        if v is not None and v < 1:
+            raise ValueError("Los cupos deben ser al menos 1")
+        return v
+
+    @field_validator("status")
+    @classmethod
+    def validate_status(cls, v: str | None) -> str | None:
+        if v is not None and v not in ["abierta", "cerrada"]:
+            raise ValueError("El estado debe ser 'abierta' o 'cerrada'")
+        return v
+
+
 class SessionResponse(BaseModel):
     id: int
     name: str
     date: dt.date
     modality: str
     spots: int
+    participants_count: int = 0
     status: str = "abierta"
     creator_id: int | None = None
     creator_name: str | None = None

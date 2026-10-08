@@ -1307,4 +1307,213 @@
   border-color: rgba(52, 211, 153, 0.3);
 }
 
+/* ── FLUJO AMPLIADO: EDITAR, ELIMINAR Y RESTRICCIÓN DE ESTADO ── */
+
+/* Barra de herramientas del creador (Editar / Eliminar) */
+.session-creator-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+
+.btn-toolbar-action {
+  flex: 1;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.btn-edit-session:hover {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+  border-color: #6366f1;
+}
+
+.btn-delete-session:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.session-spots-closed-pill {
+  font-size: 0.75rem;
+  color: #ef4444;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+/* Acciones en el footer de la tarjeta */
+.session-open-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.btn-join-session {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.btn-join-active {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+}
+
+.btn-join-active:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
+}
+
+.btn-join-active:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Restricción según su estado: Sesión cerrada */
+.session-status-restricted-box {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-join-disabled {
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--text-muted);
+  border: 1px dashed var(--border);
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.restriction-caption {
+  font-size: 0.73rem;
+  color: #ef4444;
+  font-style: italic;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* Modales para Editar y Confirmar Eliminación */
+.edit-session-modal, .delete-confirm-modal {
+  max-width: 480px;
+  width: 90%;
+  animation: modalPopIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalPopIn {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.modal-header-row h3 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.btn-modal-close-icon {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.btn-modal-close-icon:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+
+.form-row-edit {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 600px) {
+  .form-row-edit {
+    grid-template-columns: 1fr;
+  }
+}
+
+.btn-confirm-edit {
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  padding: 9px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-confirm-edit:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.btn-danger-confirm {
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  padding: 9px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-danger-confirm:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+.delete-target-preview {
+  margin: 12px 0;
+  padding: 10px;
+  background: var(--surface2);
+  border-radius: 6px;
+  border-left: 4px solid #ef4444;
+  color: var(--text);
+}
+
+.delete-disclaimer {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
 

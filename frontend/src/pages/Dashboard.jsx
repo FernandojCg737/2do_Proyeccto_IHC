@@ -26,6 +26,14 @@ export default function Dashboard() {
   const [closingSessionId, setClosingSessionId] = useState(null)
   const [toastMessage, setToastMessage] = useState(null)
 
+  // ── EDITAR, ELIMINAR Y PARTICIPAR (FLUJO AMPLIADO) ───
+  const [editingSession, setEditingSession] = useState(null)
+  const [editForm, setEditForm] = useState({ name: '', date: '', modality: 'Presencial', spots: '' })
+  const [editSaving, setEditSaving] = useState(false)
+  const [sessionToDelete, setSessionToDelete] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
+  const [joiningSessionId, setJoiningSessionId] = useState(null)
+
   // Cargar sesiones guardadas desde PostgreSQL al montar el componente
   useEffect(() => {
     api.get('/sessions/')
@@ -70,6 +78,97 @@ export default function Dashboard() {
       setSessionError(msg)
     } finally {
       setSessionSaving(false)
+    }
+  }
+
+  // 1. EDITAR: Abrir modal y enviar actualización PUT /sessions/{id}
+  const openEditModal = (session) => {
+    setEditingSession(session)
+    setEditForm({
+      name: session.name,
+      date: session.date,
+      modality: session.modality,
+      spots: session.spots,
+      status: session.status || 'abierta',
+    })
+  }
+
+  const handleUpdateSession = async (e) => {
+    e.preventDefault()
+    if (!editingSession) return
+    setEditSaving(true)
+    try {
+      const res = await api.put(`/sessions/${editingSession.id}`, {
+        name: editForm.name.trim(),
+        date: editForm.date,
+        modality: editForm.modality,
+        spots: parseInt(editForm.spots),
+        status: editForm.status,
+      })
+      setSessions((prev) => prev.map((s) => (s.id === editingSession.id ? res.data : s)))
+      setEditingSession(null)
+      setToastMessage({
+        type: 'success',
+        text: `Sesión "${res.data.name}" actualizada con éxito (${res.data.status === 'abierta' ? 'Inscripciones abiertas' : 'Inscripciones cerradas'}).`
+      })
+      setTimeout(() => setToastMessage(null), 4000)
+    } catch (err) {
+      const msg = err?.response?.data?.detail || 'Error al actualizar la sesión.'
+      setToastMessage({ type: 'error', text: `⚠️ ${msg}` })
+      setTimeout(() => setToastMessage(null), 4500)
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
+  // 2. ELIMINAR: Con confirmación previa vía DELETE /sessions/{id}
+  const handleConfirmDelete = async () => {
+    if (!sessionToDelete) return
+    setDeletingId(sessionToDelete.id)
+    try {
+      await api.delete(`/sessions/${sessionToDelete.id}`)
+      setSessions((prev) => prev.filter((s) => s.id !== sessionToDelete.id))
+      setToastMessage({
+        type: 'success',
+        text: `Sesión "${sessionToDelete.name}" eliminada de la base de datos.`
+      })
+      setTimeout(() => setToastMessage(null), 4000)
+      setSessionToDelete(null)
+    } catch (err) {
+      const msg = err?.response?.data?.detail || 'Error al eliminar la sesión.'
+      setToastMessage({ type: 'error', text: `⚠️ ${msg}` })
+      setTimeout(() => setToastMessage(null), 4500)
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  // 3. RESTRICCIÓN SEGÚN ESTADO: Inscribirse a una sesión
+  const handleJoinSession = async (session) => {
+    if (session.status === 'cerrada') {
+      setToastMessage({
+        type: 'error',
+        text: '⛔ Restricción StudyMatch: Una sesión cerrada no acepta nuevos participantes.'
+      })
+      setTimeout(() => setToastMessage(null), 4500)
+      return
+    }
+
+    setJoiningSessionId(session.id)
+    try {
+      const res = await api.post(`/sessions/${session.id}/join`)
+      setSessions((prev) => prev.map((s) => (s.id === session.id ? res.data : s)))
+      setToastMessage({
+        type: 'success',
+        text: `🎉 ¡Te has inscrito a "${session.name}"! Cupo reservado y persistido en la BD.`
+      })
+      setTimeout(() => setToastMessage(null), 4000)
+    } catch (err) {
+      const msg = err?.response?.data?.detail || 'Error al unirte a la sesión.'
+      setToastMessage({ type: 'error', text: `⚠️ ${msg}` })
+      setTimeout(() => setToastMessage(null), 4500)
+    } finally {
+      setJoiningSessionId(null)
     }
   }
 
@@ -386,31 +485,73 @@ export default function Dashboard() {
                     )}
 
                     <div className="session-spots">
-                      👥 <strong>{s.spots}</strong> cupos {isClosed ? 'registrados' : 'disponibles'}
+                      👥 <strong>{s.participants_count || 0} / {s.spots}</strong> participantes
+                      {isClosed && <span className="session-spots-closed-pill"> (Cupo cerrado)</span>}
                     </div>
 
-                    <div className="session-card-footer">
-                      {isClosed ? (
-                        <div className="session-closed-notice">
-                          <span>🔒 Inscripciones cerradas</span>
-                        </div>
-                      ) : isCreator ? (
+                    {/* Acciones exclusivas del creador: Editar y Eliminar */}
+                    {isCreator && (
+                      <div className="session-creator-toolbar">
                         <button
-                          id={`btn-close-session-${s.id}`}
-                          className="btn-close-registration"
-                          onClick={() => handleCloseRegistration(s.id, s.name)}
-                          disabled={closingSessionId === s.id}
-                          title="Cerrar inscripciones para esta sesión (Solo el creador)"
+                          type="button"
+                          className="btn-toolbar-action btn-edit-session"
+                          onClick={() => openEditModal(s)}
+                          title="Editar los datos de esta sesión"
                         >
-                          {closingSessionId === s.id ? (
-                            <>⏳ Cerrando...</>
-                          ) : (
-                            <>🔒 Cerrar inscripciones</>
-                          )}
+                          ✏️ Editar
                         </button>
+                        <button
+                          type="button"
+                          className="btn-toolbar-action btn-delete-session"
+                          onClick={() => setSessionToDelete(s)}
+                          title="Eliminar esta sesión de estudio"
+                        >
+                          🗑️ Eliminar
+                        </button>
+                      </div>
+                    )}
+
+                    <div className="session-card-footer">
+                      {/* Restricción según su estado: Directriz StudyMatch */}
+                      {isClosed ? (
+                        <div className="session-status-restricted-box">
+                          <button
+                            type="button"
+                            className="btn-join-session btn-join-disabled"
+                            disabled
+                            title="Directriz StudyMatch: Una sesión cerrada no acepta nuevos participantes."
+                          >
+                            ⛔ Inscripción cerrada
+                          </button>
+                          <span className="restriction-caption">Una sesión cerrada no acepta nuevos participantes</span>
+                        </div>
                       ) : (
-                        <div className="session-guest-notice" title="Solo el creador puede cerrar inscripciones">
-                          <span>👥 Inscripción abierta</span>
+                        <div className="session-open-actions">
+                          <button
+                            type="button"
+                            className="btn-join-session btn-join-active"
+                            onClick={() => handleJoinSession(s)}
+                            disabled={joiningSessionId === s.id}
+                            title="Unirme a esta sesión de estudio"
+                          >
+                            {joiningSessionId === s.id ? '⏳ Inscribiendo...' : 'Inscribirme'}
+                          </button>
+
+                          {isCreator && (
+                            <button
+                              id={`btn-close-session-${s.id}`}
+                              className="btn-close-registration"
+                              onClick={() => handleCloseRegistration(s.id, s.name)}
+                              disabled={closingSessionId === s.id}
+                              title="Cerrar inscripciones para esta sesión (Solo el creador)"
+                            >
+                              {closingSessionId === s.id ? (
+                                <>⏳ Cerrando...</>
+                              ) : (
+                                <>🔒 Cerrar inscripciones</>
+                              )}
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -443,6 +584,152 @@ export default function Dashboard() {
           <span>Perfil</span>
         </Link>
       </nav>
+
+      {/* Modal para Editar Sesión */}
+      {editingSession && (
+        <div className="modal-overlay" onClick={() => setEditingSession(null)}>
+          <div className="modal edit-session-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-row">
+              <h3>✏️ Editar Sesión de Estudio</h3>
+              <button
+                type="button"
+                className="btn-modal-close-icon"
+                onClick={() => setEditingSession(null)}
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleUpdateSession} className="edit-session-form">
+              <div className="form-group">
+                <label>Nombre de la sesión</label>
+                <input
+                  type="text"
+                  value={editForm.name}
+                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                  placeholder="Ej: Repaso examen final..."
+                  required
+                  minLength={3}
+                />
+              </div>
+
+              <div className="form-row-edit">
+                <div className="form-group">
+                  <label>Fecha</label>
+                  <input
+                    type="date"
+                    value={editForm.date}
+                    onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Modalidad</label>
+                  <select
+                    value={editForm.modality}
+                    onChange={(e) => setEditForm({ ...editForm, modality: e.target.value })}
+                  >
+                    <option value="Presencial">Presencial</option>
+                    <option value="Virtual">Virtual</option>
+                    <option value="Híbrida">Híbrida</option>
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Cupos totales</label>
+                  <input
+                    type="number"
+                    min={editingSession.participants_count || 1}
+                    value={editForm.spots}
+                    onChange={(e) => setEditForm({ ...editForm, spots: e.target.value })}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="form-group edit-status-group" style={{ marginTop: '14px' }}>
+                <label>Estado de inscripción</label>
+                <select
+                  value={editForm.status}
+                  onChange={(e) => setEditForm({ ...editForm, status: e.target.value })}
+                  className="edit-status-select"
+                >
+                  <option value="abierta">🟢 Inscripción abierta (Acepta nuevos participantes)</option>
+                  <option value="cerrada">🔒 Inscripción cerrada (No acepta nuevos participantes)</option>
+                </select>
+                <small style={{ display: 'block', marginTop: '4px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                  {editForm.status === 'abierta'
+                    ? '✔️ La sesión volverá a aceptar nuevos inscritos.'
+                    : '⛔ La sesión quedará bloqueada para nuevos inscritos.'}
+                </small>
+              </div>
+
+              <div className="modal-actions">
+                <button
+                  type="button"
+                  className="btn-cancel"
+                  onClick={() => setEditingSession(null)}
+                  disabled={editSaving}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn-confirm-edit"
+                  disabled={editSaving}
+                >
+                  {editSaving ? 'Guardando...' : '💾 Guardar Cambios'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmación para Eliminar Sesión */}
+      {sessionToDelete && (
+        <div className="modal-overlay" onClick={() => setSessionToDelete(null)}>
+          <div className="modal delete-confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-row">
+              <h3>🗑️ Confirmar Eliminación</h3>
+              <button
+                type="button"
+                className="btn-modal-close-icon"
+                onClick={() => setSessionToDelete(null)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="modal-body-content">
+              <p>¿Estás seguro de que deseas eliminar permanentemente la sesión:</p>
+              <div className="delete-target-preview">
+                <strong>"{sessionToDelete.name}"</strong>
+              </div>
+              <p className="delete-disclaimer">
+                ⚠️ Esta acción borrará el registro de la base de datos y no se puede deshacer.
+              </p>
+            </div>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn-cancel"
+                onClick={() => setSessionToDelete(null)}
+                disabled={deletingId === sessionToDelete.id}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn-danger-confirm"
+                onClick={handleConfirmDelete}
+                disabled={deletingId === sessionToDelete.id}
+              >
+                {deletingId === sessionToDelete.id ? 'Eliminando...' : 'Sí, Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Logout confirm modal */}
       {showLogoutConfirm && (

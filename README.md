@@ -108,6 +108,8 @@ El proyecto incluye una suite de pruebas unitarias que valida la máquina de est
 2. **`test_02_accion_realiza_transicion_esperada`**: La acción `close_registration()` realiza la transición exitosa de `'abierta'` a `'cerrada'`.
 3. **`test_03_transicion_invalida_se_rechaza`**: Intentar cerrar una sesión que ya se encuentra cerrada se rechaza lanzando un `ValueError`.
 4. **`test_04_demas_datos_del_elemento_se_conservan`**: Tras el cambio de estado, todos los atributos (`name`, `date`, `modality`, `spots`, etc.) se conservan intactos.
+5. **`test_05_sesion_cerrada_no_acepta_nuevos_participantes`**: Restricción según su estado: una sesión con estado `'cerrada'` no acepta nuevos participantes (lanza `ValueError`).
+6. **`test_06_sesion_abierta_acepta_nuevos_participantes`**: Una sesión abierta sí acepta nuevos participantes e incrementa los cupos ocupados.
 
 ### Comandos de ejecución:
 

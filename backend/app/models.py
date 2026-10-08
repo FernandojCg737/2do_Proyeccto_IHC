@@ -53,6 +53,7 @@ class Session(Base):
     date = Column(Date, nullable=False)
     modality = Column(String(50), nullable=False)
     spots = Column(Integer, nullable=False)
+    participants_count = Column(Integer, default=0, nullable=False)
     status = Column(String(30), default="abierta", nullable=False)
     creator_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     creator_name = Column(String(150), nullable=True)
@@ -77,6 +78,32 @@ class Session(Base):
                 f"Transición inválida: No se pueden cerrar inscripciones de una sesión con estado '{self.status}'. Solo se permite desde 'abierta'."
             )
         self.status = "cerrada"
+        return self
+
+    def reopen_registration(self):
+        """
+        Reabre las inscripciones de una sesión de estudio.
+        Transición: 'cerrada' -> 'abierta'.
+        """
+        if self.status == "abierta":
+            raise ValueError("La sesión ya se encuentra con inscripciones abiertas.")
+        self.status = "abierta"
+        return self
+
+    def register_participant(self, user_email: str | None = None):
+        """
+        Regla de negocio / Restricción según su estado:
+        Directriz de STUDYMATCH:
+        Una sesión cerrada no acepta nuevos participantes.
+        """
+        if self.status == "cerrada":
+            raise ValueError("Una sesión cerrada no acepta nuevos participantes.")
+
+        current_count = self.participants_count or 0
+        if self.spots is not None and current_count >= self.spots:
+            raise ValueError("No hay cupos disponibles en esta sesión de estudio.")
+
+        self.participants_count = current_count + 1
         return self
 
     @property

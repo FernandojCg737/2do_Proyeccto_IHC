@@ -38,6 +38,7 @@ class TestSessionStateTransitions(unittest.TestCase):
             date=date(2026, 10, 20),
             modality="Presencial",
             spots=15,
+            participants_count=0,
             status="abierta",
             creator_id=1,
             creator_name="Fernando Calani",
@@ -145,6 +146,56 @@ class TestSessionStateTransitions(unittest.TestCase):
         self.assertEqual(self.session.modality, modalidad_esperada, "La modalidad debe conservarse.")
         self.assertEqual(self.session.spots, cupos_esperados, "La cantidad de cupos debe conservarse.")
         self.assertEqual(self.session.created_at, fecha_creacion_esperada, "La fecha de creación debe conservarse.")
+
+    def test_05_sesion_cerrada_no_acepta_nuevos_participantes(self):
+        """
+        Prueba 5: Restricción según su estado (Directriz StudyMatch).
+        Verifica que una sesión con estado 'cerrada' NO acepte nuevos participantes,
+        lanzando una excepción ValueError con el mensaje de restricción.
+        """
+        # Cerrar la sesión
+        self.session.close_registration()
+        self.assertEqual(self.session.status, "cerrada")
+        participantes_iniciales = self.session.participants_count or 0
+
+        # Intentar registrar un nuevo participante en la sesión cerrada
+        with self.assertRaises(ValueError) as context:
+            self.session.register_participant(user_email="estudiante2@uagrm.edu.bo")
+
+        self.assertIn(
+            "Una sesión cerrada no acepta nuevos participantes",
+            str(context.exception),
+            "El mensaje de error debe indicar claramente la restricción de sesión cerrada."
+        )
+        self.assertEqual(
+            self.session.participants_count or 0,
+            participantes_iniciales,
+            "El contador de participantes no debe alterarse si la sesión está cerrada."
+        )
+
+    def test_06_sesion_abierta_acepta_nuevos_participantes(self):
+        """
+        Prueba 6: Una sesión abierta sí acepta participantes y actualiza su cupo ocupado.
+        """
+        self.assertEqual(self.session.status, "abierta")
+        self.session.register_participant(user_email="estudiante_nuevo@uagrm.edu.bo")
+        self.assertEqual(
+            self.session.participants_count,
+            1,
+            "Una sesión abierta debe incrementar su número de participantes inscritos."
+        )
+
+    def test_07_reabrir_sesion_cerrada(self):
+        """
+        Prueba 7: Reabrir una sesión cerrada.
+        Verifica que una sesión cerrada pueda reabrirse ('cerrada' -> 'abierta')
+        y volver a recibir participantes.
+        """
+        self.session.close_registration()
+        self.assertEqual(self.session.status, "cerrada")
+        self.session.reopen_registration()
+        self.assertEqual(self.session.status, "abierta")
+        self.assertTrue(self.session.is_open)
 
 
 if __name__ == "__main__":

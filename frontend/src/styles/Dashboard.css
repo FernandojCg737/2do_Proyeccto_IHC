@@ -1393,6 +1393,20 @@
   cursor: not-allowed;
 }
 
+.btn-join-enrolled {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  cursor: default;
+  font-weight: 600;
+}
+
+[data-theme="dark"] .btn-join-enrolled {
+  background: rgba(16, 185, 129, 0.18);
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.35);
+}
+
 /* Restricción según su estado: Sesión cerrada */
 .session-status-restricted-box {
   width: 100%;

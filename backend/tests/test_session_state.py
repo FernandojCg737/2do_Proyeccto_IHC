@@ -39,6 +39,7 @@ class TestSessionStateTransitions(unittest.TestCase):
             modality="Presencial",
             spots=15,
             participants_count=0,
+            participant_emails="[]",
             status="abierta",
             creator_id=1,
             creator_name="Fernando Calani",
@@ -196,6 +197,25 @@ class TestSessionStateTransitions(unittest.TestCase):
         self.session.reopen_registration()
         self.assertEqual(self.session.status, "abierta")
         self.assertTrue(self.session.is_open)
+
+    def test_08_usuario_ya_inscrito_no_puede_inscribirse_doble(self):
+        """
+        Prueba 8: Prevención de doble inscripción.
+        Verifica que si un usuario ya se inscribió a la sesión, un segundo
+        intento de inscripción sea rechazado con ValueError.
+        """
+        email_estudiante = "juan.perez@uagrm.edu.bo"
+        # Primera inscripción exitosa
+        self.session.register_participant(user_email=email_estudiante)
+        self.assertEqual(self.session.participants_count, 1)
+        self.assertTrue(self.session.is_user_registered(email_estudiante))
+
+        # Segundo intento con el mismo usuario debe ser rechazado
+        with self.assertRaises(ValueError) as context:
+            self.session.register_participant(user_email=email_estudiante)
+
+        self.assertIn("Ya te encuentras inscrito", str(context.exception))
+        self.assertEqual(self.session.participants_count, 1)
 
 
 if __name__ == "__main__":

@@ -1,3 +1,4 @@
+import json
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Date, ForeignKey
 from sqlalchemy.sql import func
 from app.database import Base
@@ -54,11 +55,28 @@ class Session(Base):
     modality = Column(String(50), nullable=False)
     spots = Column(Integer, nullable=False)
     participants_count = Column(Integer, default=0, nullable=False)
+    participant_emails = Column(Text, default="[]", nullable=False)
     status = Column(String(30), default="abierta", nullable=False)
     creator_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     creator_name = Column(String(150), nullable=True)
     creator_email = Column(String(150), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    def get_participant_emails_list(self) -> list[str]:
+        if not self.participant_emails:
+            return []
+        try:
+            data = json.loads(self.participant_emails)
+            if isinstance(data, list):
+                return [str(e).strip().lower() for e in data if str(e).strip()]
+        except Exception:
+            return [e.strip().lower() for e in str(self.participant_emails).split(",") if e.strip()]
+        return []
+
+    def is_user_registered(self, user_email: str | None) -> bool:
+        if not user_email:
+            return False
+        return user_email.strip().lower() in self.get_participant_emails_list()
 
     def close_registration(self, user_email: str | None = None, user_id: int | None = None):
         """
@@ -90,20 +108,45 @@ class Session(Base):
         self.status = "abierta"
         return self
 
+    def can_join(self, user_email: str | None = None) -> tuple[bool, str]:
+        """
+        Regla de negocio: ¿Puede unirse a la sesión?
+        Evalúa si un estudiante cumple todas las condiciones para inscribirse.
+        Retorna (True, 'Permitido') o (False, 'Motivo del rechazo').
+        """
+        if self.status != "abierta":
+            return False, "Una sesión cerrada no acepta nuevos participantes."
+
+        normalized_email = user_email.strip().lower() if user_email else None
+        if normalized_email and self.is_user_registered(normalized_email):
+            return False, "Ya te encuentras inscrito en esta sesión de estudio."
+
+        current_count = self.participants_count or len(self.get_participant_emails_list())
+        if self.spots is not None and current_count >= self.spots:
+            return False, "No hay cupos disponibles en esta sesión de estudio."
+
+        return True, "Permitido"
+
     def register_participant(self, user_email: str | None = None):
         """
-        Regla de negocio / Restricción según su estado:
-        Directriz de STUDYMATCH:
-        Una sesión cerrada no acepta nuevos participantes.
+        Aplica la regla de negocio: ¿Puede unirse a la sesión?
+        Si la regla lo rechaza, levanta ValueError con el motivo.
+        Si lo permite, registra el participante y persiste el cambio.
         """
-        if self.status == "cerrada":
-            raise ValueError("Una sesión cerrada no acepta nuevos participantes.")
+        allowed, reason = self.can_join(user_email)
+        if not allowed:
+            raise ValueError(reason)
 
-        current_count = self.participants_count or 0
-        if self.spots is not None and current_count >= self.spots:
-            raise ValueError("No hay cupos disponibles en esta sesión de estudio.")
+        normalized_email = user_email.strip().lower() if user_email else None
+        emails = self.get_participant_emails_list()
 
-        self.participants_count = current_count + 1
+        if normalized_email:
+            emails.append(normalized_email)
+            self.participant_emails = json.dumps(emails)
+            self.participants_count = len(emails)
+        else:
+            self.participants_count = (self.participants_count or 0) + 1
+
         return self
 
     @property

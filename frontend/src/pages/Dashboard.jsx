@@ -453,6 +453,12 @@ export default function Dashboard() {
                   )
                 )
 
+                // Verifica si el usuario actual ya se encuentra inscrito
+                const isEnrolled = Boolean(
+                  user && user.email && Array.isArray(s.participant_emails) &&
+                  s.participant_emails.map((e) => String(e).toLowerCase().trim()).includes(user.email.trim().toLowerCase())
+                )
+
                 return (
                   <div
                     key={s.id}
@@ -527,15 +533,26 @@ export default function Dashboard() {
                         </div>
                       ) : (
                         <div className="session-open-actions">
-                          <button
-                            type="button"
-                            className="btn-join-session btn-join-active"
-                            onClick={() => handleJoinSession(s)}
-                            disabled={joiningSessionId === s.id}
-                            title="Unirme a esta sesión de estudio"
-                          >
-                            {joiningSessionId === s.id ? '⏳ Inscribiendo...' : 'Inscribirme'}
-                          </button>
+                          {isEnrolled ? (
+                            <button
+                              type="button"
+                              className="btn-join-session btn-join-enrolled"
+                              disabled
+                              title="Ya te encuentras registrado como participante en esta sesión"
+                            >
+                              ✅ Ya estás inscrito
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="btn-join-session btn-join-active"
+                              onClick={() => handleJoinSession(s)}
+                              disabled={joiningSessionId === s.id}
+                              title="Unirme a esta sesión de estudio"
+                            >
+                              {joiningSessionId === s.id ? '⏳ Inscribiendo...' : 'Inscribirme'}
+                            </button>
+                          )}
 
                           {isCreator && (
                             <button

@@ -43,6 +43,7 @@ class TestSessionStateTransitions(unittest.TestCase):
             status="abierta",
             creator_id=1,
             creator_name="Fernando Calani",
+            creator_email="fernando.calani@uagrm.edu.bo",
             created_at=datetime(2026, 10, 5, 10, 0, 0)
         )
 
@@ -216,6 +217,34 @@ class TestSessionStateTransitions(unittest.TestCase):
 
         self.assertIn("Ya te encuentras inscrito", str(context.exception))
         self.assertEqual(self.session.participants_count, 1)
+
+    def test_09_no_puede_unirse_si_fecha_ya_paso(self):
+        """
+        Prueba 9: Criterio docente - No puedo unirme a una sesión cuya fecha ya pasó.
+        """
+        # Asignar fecha en el pasado
+        self.session.date = date(2020, 1, 1)
+        with self.assertRaises(ValueError) as context:
+            self.session.register_participant(user_email="estudiante_tardio@uagrm.edu.bo")
+        self.assertIn("fecha ya pasó", str(context.exception))
+
+    def test_10_creador_no_puede_unirse_a_su_propia_sesion(self):
+        """
+        Prueba 10: Criterio docente - El creador no puede unirse a su propia sesión.
+        """
+        with self.assertRaises(ValueError) as context:
+            self.session.register_participant(user_email="fernando.calani@uagrm.edu.bo")
+        self.assertIn("creador no puede unirse a su propia sesión", str(context.exception))
+
+    def test_11_no_puede_unirse_si_cupos_agotados(self):
+        """
+        Prueba 11: Criterio docente - No puedo unirme si la sesión no tiene cupos.
+        """
+        self.session.spots = 1
+        self.session.participants_count = 1
+        with self.assertRaises(ValueError) as context:
+            self.session.register_participant(user_email="estudiante_sincupo@uagrm.edu.bo")
+        self.assertIn("No hay cupos disponibles", str(context.exception))
 
 
 if __name__ == "__main__":

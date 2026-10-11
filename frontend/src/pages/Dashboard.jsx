@@ -459,20 +459,48 @@ export default function Dashboard() {
                   s.participant_emails.map((e) => String(e).toLowerCase().trim()).includes(user.email.trim().toLowerCase())
                 )
 
+                // Verifica si la fecha de la sesión ya pasó (comparación local)
+                const today = new Date()
+                today.setHours(0, 0, 0, 0)
+                const sessionDate = new Date(s.date + 'T00:00:00')
+                const isPastDate = Boolean(s.date && sessionDate < today)
+
+                // Verifica si los cupos están agotados
+                const isFull = Boolean(s.spots && (s.participants_count || 0) >= s.spots)
+
+                // Determinar el badge de estado superior coherente (IHC)
+                let statusBadgeClass = 'status-open'
+                let statusBadgeLabel = '🟢 Inscripción abierta'
+                let cardStateClass = 'session-card-open'
+
+                if (isClosed) {
+                  statusBadgeClass = 'status-closed'
+                  statusBadgeLabel = '🔒 Cerrada'
+                  cardStateClass = 'session-card-closed'
+                } else if (isPastDate) {
+                  statusBadgeClass = 'status-past'
+                  statusBadgeLabel = '⌛ Finalizada'
+                  cardStateClass = 'session-card-past'
+                } else if (isFull) {
+                  statusBadgeClass = 'status-full'
+                  statusBadgeLabel = '👥 Cupos llenos'
+                  cardStateClass = 'session-card-full'
+                }
+
                 return (
                   <div
                     key={s.id}
-                    className={`session-card ${isClosed ? 'session-card-closed' : 'session-card-open'}`}
+                    className={`session-card ${cardStateClass}`}
                   >
                     <div className="session-card-header">
                       <span className={`session-modality-badge ${modalityColor(s.modality)}`}>
                         {s.modality}
                       </span>
                       <span
-                        className={`session-status-badge ${isClosed ? 'status-closed' : 'status-open'}`}
+                        className={`session-status-badge ${statusBadgeClass}`}
                         id={`status-badge-${s.id}`}
                       >
-                        {isClosed ? '🔒 Cerrada' : '🟢 Inscripción abierta'}
+                        {statusBadgeLabel}
                       </span>
                     </div>
 
@@ -518,43 +546,13 @@ export default function Dashboard() {
                     )}
 
                     <div className="session-card-footer">
-                      {/* Restricción según su estado: Directriz StudyMatch */}
-                      {isClosed ? (
-                        <div className="session-status-restricted-box">
-                          <button
-                            type="button"
-                            className="btn-join-session btn-join-disabled"
-                            disabled
-                            title="Directriz StudyMatch: Una sesión cerrada no acepta nuevos participantes."
-                          >
-                            ⛔ Inscripción cerrada
-                          </button>
-                          <span className="restriction-caption">Una sesión cerrada no acepta nuevos participantes</span>
-                        </div>
-                      ) : (
-                        <div className="session-open-actions">
-                          {isEnrolled ? (
-                            <button
-                              type="button"
-                              className="btn-join-session btn-join-enrolled"
-                              disabled
-                              title="Ya te encuentras registrado como participante en esta sesión"
-                            >
-                              ✅ Ya estás inscrito
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              className="btn-join-session btn-join-active"
-                              onClick={() => handleJoinSession(s)}
-                              disabled={joiningSessionId === s.id}
-                              title="Unirme a esta sesión de estudio"
-                            >
-                              {joiningSessionId === s.id ? '⏳ Inscribiendo...' : 'Inscribirme'}
-                            </button>
-                          )}
-
-                          {isCreator && (
+                      {/* Caso 1: Creador de la sesión (no puede unirse a su propia sesión) */}
+                      {isCreator ? (
+                        <div className="session-creator-footer-box">
+                          <div className="creator-notice-badge">
+                            👤 Eres el organizador de esta sesión
+                          </div>
+                          {!isClosed && !isPastDate && (
                             <button
                               id={`btn-close-session-${s.id}`}
                               className="btn-close-registration"
@@ -569,6 +567,71 @@ export default function Dashboard() {
                               )}
                             </button>
                           )}
+                        </div>
+                      ) : isClosed ? (
+                        /* Caso 2: Sesión cerrada */
+                        <div className="session-status-restricted-box">
+                          <button
+                            type="button"
+                            className="btn-join-session btn-join-disabled"
+                            disabled
+                            title="Directriz StudyMatch: Una sesión cerrada no acepta nuevos participantes."
+                          >
+                            ⛔ Inscripción cerrada
+                          </button>
+                          <span className="restriction-caption">Motivo: Una sesión cerrada no acepta nuevos participantes</span>
+                        </div>
+                      ) : isPastDate ? (
+                        /* Caso 3: Fecha pasada */
+                        <div className="session-status-restricted-box">
+                          <button
+                            type="button"
+                            className="btn-join-session btn-join-disabled"
+                            disabled
+                            title="No puedes unirte a una sesión cuya fecha ya pasó."
+                          >
+                            📅 Sesión finalizada
+                          </button>
+                          <span className="restriction-caption">Motivo: La fecha programada para esta sesión ya pasó</span>
+                        </div>
+                      ) : isFull ? (
+                        /* Caso 4: Cupos agotados */
+                        <div className="session-status-restricted-box">
+                          <button
+                            type="button"
+                            className="btn-join-session btn-join-disabled"
+                            disabled
+                            title="No hay cupos disponibles en esta sesión de estudio."
+                          >
+                            👥 Cupos agotados
+                          </button>
+                          <span className="restriction-caption">Motivo: Se han ocupado todos los cupos disponibles</span>
+                        </div>
+                      ) : isEnrolled ? (
+                        /* Caso 5: Ya está inscrito */
+                        <div className="session-status-restricted-box">
+                          <button
+                            type="button"
+                            className="btn-join-session btn-join-enrolled"
+                            disabled
+                            title="Ya te encuentras registrado como participante en esta sesión"
+                          >
+                            ✅ Ya estás inscrito
+                          </button>
+                          <span className="restriction-caption" style={{ color: '#059669' }}>Motivo: Ya formas parte de esta sesión</span>
+                        </div>
+                      ) : (
+                        /* Caso 6: Cumple todos los requisitos para unirse */
+                        <div className="session-open-actions">
+                          <button
+                            type="button"
+                            className="btn-join-session btn-join-active"
+                            onClick={() => handleJoinSession(s)}
+                            disabled={joiningSessionId === s.id}
+                            title="Unirme a esta sesión de estudio"
+                          >
+                            {joiningSessionId === s.id ? '⏳ Inscribiendo...' : 'Inscribirme'}
+                          </button>
                         </div>
                       )}
                     </div>

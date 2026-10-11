@@ -1,4 +1,5 @@
 import json
+from datetime import date as dt_date
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Date, ForeignKey
 from sqlalchemy.sql import func
 from app.database import Base
@@ -111,16 +112,36 @@ class Session(Base):
     def can_join(self, user_email: str | None = None) -> tuple[bool, str]:
         """
         Regla de negocio: ¿Puede unirse a la sesión?
-        Evalúa si un estudiante cumple todas las condiciones para inscribirse.
+        Evalúa si un estudiante cumple todas las condiciones para inscribirse:
+        1. Sesión abierta.
+        2. Fecha futura (la fecha no ha pasado).
+        3. El creador no puede unirse a su propia sesión.
+        4. No estar ya inscrito (no duplicidad).
+        5. Cupos disponibles.
         Retorna (True, 'Permitido') o (False, 'Motivo del rechazo').
         """
+        # 1. Sesión cerrada
         if self.status != "abierta":
             return False, "Una sesión cerrada no acepta nuevos participantes."
 
+        # 2. Fecha pasada
+        if self.date:
+            session_date = self.date if isinstance(self.date, dt_date) else dt_date.fromisoformat(str(self.date))
+            if session_date < dt_date.today():
+                return False, "No puedes unirte a una sesión cuya fecha ya pasó."
+
         normalized_email = user_email.strip().lower() if user_email else None
+
+        # 3. El creador no puede unirse a su propia sesión
+        if normalized_email and self.creator_email:
+            if normalized_email == self.creator_email.strip().lower():
+                return False, "El creador no puede unirse a su propia sesión."
+
+        # 4. No duplicidad
         if normalized_email and self.is_user_registered(normalized_email):
             return False, "Ya te encuentras inscrito en esta sesión de estudio."
 
+        # 5. Cupos disponibles
         current_count = self.participants_count or len(self.get_participant_emails_list())
         if self.spots is not None and current_count >= self.spots:
             return False, "No hay cupos disponibles en esta sesión de estudio."

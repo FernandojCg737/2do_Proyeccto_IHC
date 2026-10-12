@@ -1,8 +1,10 @@
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import date as dt_date, timedelta
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session as DBSession
 from app.database import get_db
-from app.models import Session, User
+from app.models import Session, User, Subject, filter_sessions_query
 from app.schemas import SessionCreate, SessionResponse, SessionStatusUpdate, SessionUpdate
 from app.routers.auth import get_current_user
 
@@ -24,8 +26,17 @@ def create_session(
         or f"{current_user.first_name or ''} {current_user.last_name or ''}".strip()
         or current_user.email
     )
+    subject_val = data.subject.strip() if data.subject and data.subject.strip() else None
+
+    # Si se especificó una materia, actualizar contador en subjects si existe
+    if subject_val:
+        subj = db.query(Subject).filter(Subject.name.ilike(subject_val)).first()
+        if subj:
+            subj.sessions_count = (subj.sessions_count or 0) + 1
+
     new_session = Session(
         name=data.name,
+        subject=subject_val,
         date=data.date,
         modality=data.modality,
         spots=data.spots,
@@ -41,12 +52,29 @@ def create_session(
 
 
 @router.get("/", response_model=List[SessionResponse])
-def get_sessions(db: DBSession = Depends(get_db)):
+def get_sessions(
+    search: Optional[str] = Query(None, description="Buscar por nombre de sesión"),
+    subject: Optional[str] = Query(None, description="Filtrar por materia"),
+    modality: Optional[str] = Query(None, description="Filtrar por modalidad (Presencial, Virtual, Híbrida)"),
+    date_filter: Optional[str] = Query(None, description="Filtro de fecha: 'hoy', 'proximos_7_dias', 'rango'"),
+    date_from: Optional[dt_date] = Query(None, description="Fecha inicio para rango"),
+    date_to: Optional[dt_date] = Query(None, description="Fecha fin para rango"),
+    only_available: bool = Query(False, description="Solo sesiones abiertas, con cupos y fecha futura"),
+    db: DBSession = Depends(get_db)
+):
     """
-    Devuelve todas las sesiones guardadas en la BD,
-    ordenadas de la más reciente a la más antigua.
+    Devuelve las sesiones guardadas en la BD aplicando los filtros combinables por base de datos.
     """
-    return db.query(Session).order_by(Session.created_at.desc()).all()
+    return filter_sessions_query(
+        db=db,
+        search=search,
+        subject=subject,
+        modality=modality,
+        date_filter=date_filter,
+        date_from=date_from,
+        date_to=date_to,
+        only_available=only_available
+    )
 
 
 @router.patch("/{session_id}/close", response_model=SessionResponse)
@@ -193,6 +221,8 @@ def update_session(
                 detail=f"Los cupos ({data.spots}) no pueden ser menores a los participantes ya inscritos ({session.participants_count})."
             )
         session.spots = data.spots
+    if data.subject is not None:
+        session.subject = data.subject.strip() if data.subject else None
 
     if data.status is not None:
         if data.status not in ["abierta", "cerrada"]:

@@ -126,8 +126,11 @@ class SubjectBase(BaseModel):
     sessions_count: int = 0
 
 
-class SubjectCreate(SubjectBase):
-    pass
+class SubjectCreate(BaseModel):
+    name: str
+    code: str | None = None
+    area: str = "General"
+    emoji: str | None = "📚"
 
 
 class SubjectResponse(SubjectBase):
@@ -142,6 +145,7 @@ import datetime as dt
 
 class SessionCreate(BaseModel):
     name: str
+    subject: str | None = None
     date: dt.date
     modality: str
     spots: int
@@ -169,6 +173,7 @@ class SessionStatusUpdate(BaseModel):
 
 class SessionUpdate(BaseModel):
     name: str | None = None
+    subject: str | None = None
     date: dt.date | None = None
     modality: str | None = None
     spots: int | None = None
@@ -201,6 +206,7 @@ class SessionUpdate(BaseModel):
 class SessionResponse(BaseModel):
     id: int
     name: str
+    subject: str | None = None
     date: dt.date
     modality: str
     spots: int

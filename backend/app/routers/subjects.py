@@ -1,12 +1,58 @@
+import unicodedata
+import re
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Subject
-from app.schemas import SubjectResponse
+from app.schemas import SubjectCreate, SubjectResponse
 from app.seed_data import SUBJECTS_DATA
 
 router = APIRouter(prefix="/subjects", tags=["Materias"])
+
+
+@router.post("/", response_model=SubjectResponse, status_code=status.HTTP_201_CREATED)
+def create_custom_subject(data: SubjectCreate, db: Session = Depends(get_db)):
+    """
+    Registra una nueva materia en la base de datos (por ejemplo, desde la opción 'Otros' al crear una sesión).
+    Si ya existe una materia con el mismo nombre, devuelve la existente.
+    """
+    name_clean = data.name.strip()
+    if not name_clean:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El nombre de la materia no puede estar vacío."
+        )
+
+    # Verificar si ya existe por nombre
+    existing = db.query(Subject).filter(Subject.name.ilike(name_clean)).first()
+    if existing:
+        return existing
+
+    # Generar código único si no fue proporcionado
+    code = data.code
+    if not code:
+        normalized = unicodedata.normalize('NFKD', name_clean).encode('ascii', 'ignore').decode('utf-8')
+        base_prefix = re.sub(r'[^A-Z0-9]', '', normalized.upper())[:4] or "OTR"
+        counter = 1
+        code_candidate = f"{base_prefix}{counter:02d}"
+        while db.query(Subject).filter(Subject.code == code_candidate).first():
+            counter += 1
+            code_candidate = f"{base_prefix}{counter:02d}"
+        code = code_candidate
+
+    new_subject = Subject(
+        code=code,
+        name=name_clean,
+        area=data.area or "General",
+        emoji=data.emoji or "📚",
+        students_count=0,
+        sessions_count=0,
+    )
+    db.add(new_subject)
+    db.commit()
+    db.refresh(new_subject)
+    return new_subject
 
 
 def seed_subjects_in_db(db: Session) -> dict:

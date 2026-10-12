@@ -16,6 +16,7 @@ ALTER TABLE sessions ADD COLUMN IF NOT EXISTS participants_count INTEGER DEFAULT
 UPDATE sessions SET participants_count = 0 WHERE participants_count IS NULL;
 ALTER TABLE sessions ADD COLUMN IF NOT EXISTS participant_emails TEXT DEFAULT '[]';
 UPDATE sessions SET participant_emails = '[]' WHERE participant_emails IS NULL;
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS subject VARCHAR(150);
 
 CREATE OR REPLACE FUNCTION update_user_profile_trigger()
 RETURNS TRIGGER AS $$

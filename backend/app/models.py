@@ -1,5 +1,6 @@
 import json
-from datetime import date as dt_date
+from datetime import date as dt_date, timedelta
+from typing import Optional, List
 from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, Date, ForeignKey
 from sqlalchemy.sql import func
 from app.database import Base
@@ -61,6 +62,7 @@ class Session(Base):
     creator_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     creator_name = Column(String(150), nullable=True)
     creator_email = Column(String(150), nullable=True)
+    subject = Column(String(150), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     def get_participant_emails_list(self) -> list[str]:
@@ -173,5 +175,70 @@ class Session(Base):
     @property
     def is_open(self) -> bool:
         return self.status == "abierta"
+
+
+def filter_sessions_query(
+    db,
+    search: Optional[str] = None,
+    subject: Optional[str] = None,
+    modality: Optional[str] = None,
+    date_filter: Optional[str] = None,
+    date_from: Optional[dt_date] = None,
+    date_to: Optional[dt_date] = None,
+    only_available: bool = False,
+    reference_date: Optional[dt_date] = None
+) -> List[Session]:
+    """
+    Función de consulta en base de datos que resuelve los filtros combinables (Issue #2):
+    - Búsqueda por nombre de la sesión
+    - Filtro por materia (coincidencia con subject o contenida en name)
+    - Filtro por modalidad (Presencial, Virtual, Híbrida)
+    - Filtro por fecha (hoy, próximos 7 días, rango personalizado)
+    - Filtro por disponibilidad (regla Issue #1: abierta, fecha hoy o futura, cupos disponibles)
+    """
+    query = db.query(Session)
+
+    # 1. Búsqueda por nombre (o materia)
+    if search and search.strip():
+        term = f"%{search.strip().lower()}%"
+        query = query.filter(
+            (func.lower(Session.name).like(term)) |
+            (func.lower(Session.subject).like(term))
+        )
+
+    # 2. Filtro por materia
+    if subject and subject.strip() and subject.strip().lower() != "todas":
+        subj_name = subject.strip()
+        query = query.filter(
+            (Session.subject.ilike(subj_name)) |
+            (Session.name.ilike(f"%{subj_name}%"))
+        )
+
+    # 3. Filtro por modalidad
+    if modality and modality.strip() and modality.strip().lower() != "todas":
+        query = query.filter(Session.modality.ilike(modality.strip()))
+
+    # 4. Filtro por fecha
+    today = reference_date or dt_date.today()
+    if date_filter == "hoy":
+        query = query.filter(Session.date == today)
+    elif date_filter == "proximos_7_dias":
+        limit_7 = today + timedelta(days=7)
+        query = query.filter(Session.date >= today, Session.date <= limit_7)
+    elif date_filter == "rango":
+        if date_from:
+            query = query.filter(Session.date >= date_from)
+        if date_to:
+            query = query.filter(Session.date <= date_to)
+
+    # 5. Filtro por disponibilidad (Regla Issue #1)
+    if only_available:
+        query = query.filter(
+            Session.status == "abierta",
+            Session.date >= today,
+            Session.participants_count < Session.spots
+        )
+
+    return query.order_by(Session.created_at.desc()).all()
 
 

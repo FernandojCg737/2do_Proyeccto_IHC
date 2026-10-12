@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import ThemeToggle from '../components/ThemeToggle'
@@ -12,36 +12,123 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
 
+  // ── MATERIAS (PARA ASOCIAR Y FILTRAR) ───────────────
+  const [subjects, setSubjects] = useState([])
+
   // ── SESIONES ──────────────────────────────────────────
   const [sessions, setSessions] = useState([])
+  const [loadingSessions, setLoadingSessions] = useState(false)
   const [showSessionForm, setShowSessionForm] = useState(false)
   const [sessionForm, setSessionForm] = useState({
     name: '',
+    subject: '',
     date: '',
     modality: 'Presencial',
     spots: '',
   })
+  const [customSubjectName, setCustomSubjectName] = useState('')
   const [sessionError, setSessionError] = useState('')
   const [sessionSaving, setSessionSaving] = useState(false)
   const [closingSessionId, setClosingSessionId] = useState(null)
   const [toastMessage, setToastMessage] = useState(null)
 
+  // ── FILTROS Y BÚSQUEDA (ISSUE #2) ───────────────────
+  const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [filterSubject, setFilterSubject] = useState('')
+  const [filterModality, setFilterModality] = useState('todas')
+  const [filterDate, setFilterDate] = useState('todas')
+  const [filterDateFrom, setFilterDateFrom] = useState('')
+  const [filterDateTo, setFilterDateTo] = useState('')
+  const [filterOnlyAvailable, setFilterOnlyAvailable] = useState(false)
+
   // ── EDITAR, ELIMINAR Y PARTICIPAR (FLUJO AMPLIADO) ───
   const [editingSession, setEditingSession] = useState(null)
-  const [editForm, setEditForm] = useState({ name: '', date: '', modality: 'Presencial', spots: '' })
+  const [editForm, setEditForm] = useState({
+    name: '',
+    subject: '',
+    date: '',
+    modality: 'Presencial',
+    spots: '',
+    status: 'abierta'
+  })
+  const [editCustomSubjectName, setEditCustomSubjectName] = useState('')
   const [editSaving, setEditSaving] = useState(false)
   const [sessionToDelete, setSessionToDelete] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
   const [joiningSessionId, setJoiningSessionId] = useState(null)
 
-  // Cargar sesiones guardadas desde PostgreSQL al montar el componente
+  // Debounce para la búsqueda por texto (300ms)
   useEffect(() => {
-    api.get('/sessions/')
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  // Cargar lista de materias de la BD
+  useEffect(() => {
+    api.get('/subjects/')
       .then((res) => {
-        if (Array.isArray(res.data)) setSessions(res.data)
+        if (Array.isArray(res.data)) {
+          const sorted = [...res.data].sort((a, b) => a.name.localeCompare(b.name))
+          setSubjects(sorted)
+        }
       })
-      .catch((err) => console.warn('No se pudieron cargar las sesiones:', err))
+      .catch((err) => console.warn('No se pudieron cargar las materias:', err))
   }, [])
+
+  // Consulta de sesiones en la BD con todos los filtros combinables
+  const fetchSessions = useCallback(async () => {
+    setLoadingSessions(true)
+    try {
+      const params = {}
+      if (debouncedSearch.trim()) params.search = debouncedSearch.trim()
+      if (filterSubject && filterSubject !== 'todas') params.subject = filterSubject
+      if (filterModality && filterModality !== 'todas') params.modality = filterModality
+      if (filterDate && filterDate !== 'todas') {
+        params.date_filter = filterDate
+        if (filterDate === 'rango') {
+          if (filterDateFrom) params.date_from = filterDateFrom
+          if (filterDateTo) params.date_to = filterDateTo
+        }
+      }
+      if (filterOnlyAvailable) params.only_available = true
+
+      const res = await api.get('/sessions/', { params })
+      if (Array.isArray(res.data)) setSessions(res.data)
+    } catch (err) {
+      console.warn('Error al cargar sesiones filtradas:', err)
+    } finally {
+      setLoadingSessions(false)
+    }
+  }, [debouncedSearch, filterSubject, filterModality, filterDate, filterDateFrom, filterDateTo, filterOnlyAvailable])
+
+  // Cargar o refrescar sesiones cuando cambien los filtros
+  useEffect(() => {
+    fetchSessions()
+  }, [fetchSessions])
+
+  // Limpiar todos los filtros (IHC)
+  const handleResetFilters = () => {
+    setSearchQuery('')
+    setDebouncedSearch('')
+    setFilterSubject('')
+    setFilterModality('todas')
+    setFilterDate('todas')
+    setFilterDateFrom('')
+    setFilterDateTo('')
+    setFilterOnlyAvailable(false)
+  }
+
+  // Verifica si hay al menos un filtro activo
+  const hasActiveFilters = Boolean(
+    searchQuery.trim() ||
+    (filterSubject && filterSubject !== 'todas') ||
+    (filterModality && filterModality !== 'todas') ||
+    (filterDate && filterDate !== 'todas') ||
+    filterOnlyAvailable
+  )
 
   // Guarda la nueva sesión en la BD vía POST /sessions/
   const handleSaveSession = async (e) => {
@@ -49,7 +136,7 @@ export default function Dashboard() {
     setSessionError('')
 
     if (!sessionForm.name.trim() || !sessionForm.date || !sessionForm.modality || !sessionForm.spots) {
-      setSessionError('Por favor completa todos los campos.')
+      setSessionError('Por favor completa todos los campos obligatorios.')
       return
     }
     if (parseInt(sessionForm.spots) < 1) {
@@ -57,20 +144,43 @@ export default function Dashboard() {
       return
     }
 
+    let finalSubject = sessionForm.subject
+    if (sessionForm.subject === '__OTRO__') {
+      if (!customSubjectName.trim()) {
+        setSessionError('Por favor ingresa el nombre de la nueva materia.')
+        return
+      }
+      setSessionSaving(true)
+      try {
+        const subRes = await api.post('/subjects/', { name: customSubjectName.trim() })
+        finalSubject = subRes.data.name
+        setSubjects((prev) => {
+          const exists = prev.some(s => s.name.toLowerCase() === finalSubject.toLowerCase())
+          if (exists) return prev
+          return [...prev, subRes.data].sort((a, b) => a.name.localeCompare(b.name))
+        })
+      } catch (err) {
+        console.warn('Error al registrar materia:', err)
+        finalSubject = customSubjectName.trim()
+      }
+    }
+
     setSessionSaving(true)
     try {
       const res = await api.post('/sessions/', {
         name: sessionForm.name.trim(),
+        subject: finalSubject || null,
         date: sessionForm.date,
         modality: sessionForm.modality,
         spots: parseInt(sessionForm.spots),
       })
       setSessions((prev) => [res.data, ...prev])
-      setSessionForm({ name: '', date: '', modality: 'Presencial', spots: '' })
+      setSessionForm({ name: '', subject: '', date: '', modality: 'Presencial', spots: '' })
+      setCustomSubjectName('')
       setShowSessionForm(false)
       setToastMessage({
         type: 'success',
-        text: `Sesión "${res.data.name}" creada con inscripciones abiertas.`
+        text: `Sesión "${res.data.name}" creada exitosamente.`
       })
       setTimeout(() => setToastMessage(null), 4000)
     } catch (err) {
@@ -86,20 +196,45 @@ export default function Dashboard() {
     setEditingSession(session)
     setEditForm({
       name: session.name,
+      subject: session.subject || '',
       date: session.date,
       modality: session.modality,
       spots: session.spots,
       status: session.status || 'abierta',
     })
+    setEditCustomSubjectName('')
   }
 
   const handleUpdateSession = async (e) => {
     e.preventDefault()
     if (!editingSession) return
+
+    let finalSubject = editForm.subject
+    if (editForm.subject === '__OTRO__') {
+      if (!editCustomSubjectName.trim()) {
+        setToastMessage({ type: 'error', text: '⚠️ Por favor ingresa el nombre de la materia.' })
+        setTimeout(() => setToastMessage(null), 4000)
+        return
+      }
+      setEditSaving(true)
+      try {
+        const subRes = await api.post('/subjects/', { name: editCustomSubjectName.trim() })
+        finalSubject = subRes.data.name
+        setSubjects((prev) => {
+          const exists = prev.some(s => s.name.toLowerCase() === finalSubject.toLowerCase())
+          if (exists) return prev
+          return [...prev, subRes.data].sort((a, b) => a.name.localeCompare(b.name))
+        })
+      } catch (err) {
+        finalSubject = editCustomSubjectName.trim()
+      }
+    }
+
     setEditSaving(true)
     try {
       const res = await api.put(`/sessions/${editingSession.id}`, {
         name: editForm.name.trim(),
+        subject: finalSubject || null,
         date: editForm.date,
         modality: editForm.modality,
         spots: parseInt(editForm.spots),
@@ -109,7 +244,7 @@ export default function Dashboard() {
       setEditingSession(null)
       setToastMessage({
         type: 'success',
-        text: `Sesión "${res.data.name}" actualizada con éxito (${res.data.status === 'abierta' ? 'Inscripciones abiertas' : 'Inscripciones cerradas'}).`
+        text: `Sesión "${res.data.name}" actualizada con éxito.`
       })
       setTimeout(() => setToastMessage(null), 4000)
     } catch (err) {
@@ -342,10 +477,185 @@ export default function Dashboard() {
             <button
               id="btn-crear-sesion"
               className="btn-create-session"
-              onClick={() => { setShowSessionForm(true); setSessionError('') }}
+              onClick={() => { setShowSessionForm(true); setSessionError(''); setCustomSubjectName('') }}
             >
               + Crear Sesión
             </button>
+          </div>
+
+          {/* ── BARRA DE BÚSQUEDA Y FILTROS (ISSUE #2) ── */}
+          <div className="sessions-filter-container">
+            {/* Fila principal: Búsqueda por texto y selector de materia */}
+            <div className="filter-main-row">
+              <div className="search-input-wrapper">
+                <span className="search-icon">🔍</span>
+                <input
+                  id="input-search-sessions"
+                  type="text"
+                  className="search-input"
+                  placeholder="Buscar sesiones por nombre..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    className="search-clear-btn"
+                    onClick={() => setSearchQuery('')}
+                    title="Borrar búsqueda"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              {/* Selector de Materia */}
+              <div className="filter-select-wrapper">
+                <span className="filter-select-icon">📚</span>
+                <select
+                  id="select-filter-subject"
+                  className="filter-select"
+                  value={filterSubject}
+                  onChange={(e) => setFilterSubject(e.target.value)}
+                >
+                  <option value="">Todas las materias</option>
+                  {subjects.map((sub) => (
+                    <option key={sub.id || sub.code} value={sub.name}>
+                      {sub.emoji ? `${sub.emoji} ` : ''}{sub.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Fila secundaria: Modalidad, Fecha y Disponibilidad */}
+            <div className="filter-secondary-row">
+              {/* Filtro por Modalidad */}
+              <div className="filter-group">
+                <label className="filter-label">Modalidad:</label>
+                <div className="filter-pill-group">
+                  {['todas', 'Presencial', 'Virtual'].map((mod) => (
+                    <button
+                      key={mod}
+                      type="button"
+                      className={`filter-pill-btn ${filterModality === mod ? 'active' : ''}`}
+                      onClick={() => setFilterModality(mod)}
+                    >
+                      {mod === 'todas' ? 'Todas' : mod === 'Presencial' ? '🏫 Presencial' : '💻 Virtual'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Filtro por Fecha */}
+              <div className="filter-group">
+                <label className="filter-label">Fecha:</label>
+                <select
+                  id="select-filter-date"
+                  className="filter-select date-select"
+                  value={filterDate}
+                  onChange={(e) => setFilterDate(e.target.value)}
+                >
+                  <option value="todas">Cualquier fecha</option>
+                  <option value="hoy">📅 Hoy</option>
+                  <option value="proximos_7_dias">🗓️ Próximos 7 días</option>
+                  <option value="rango">📆 Rango personalizado...</option>
+                </select>
+              </div>
+
+              {/* Rango de fechas si seleccionó 'rango' */}
+              {filterDate === 'rango' && (
+                <div className="filter-date-range-inputs">
+                  <input
+                    type="date"
+                    className="filter-date-input"
+                    value={filterDateFrom}
+                    onChange={(e) => setFilterDateFrom(e.target.value)}
+                    title="Fecha inicio"
+                  />
+                  <span className="date-range-sep">hasta</span>
+                  <input
+                    type="date"
+                    className="filter-date-input"
+                    value={filterDateTo}
+                    onChange={(e) => setFilterDateTo(e.target.value)}
+                    title="Fecha fin"
+                  />
+                </div>
+              )}
+
+              {/* Filtro por Disponibilidad (Regla Issue #1) */}
+              <div className="filter-group filter-availability-toggle">
+                <label className="toggle-checkbox-label" title="Muestra solo sesiones con inscripciones abiertas, cupos disponibles y fecha futura (Regla Issue #1)">
+                  <input
+                    id="checkbox-filter-available"
+                    type="checkbox"
+                    checked={filterOnlyAvailable}
+                    onChange={(e) => setFilterOnlyAvailable(e.target.checked)}
+                  />
+                  <span className="toggle-text">🟢 Solo disponibles para unirme</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Fila de Filtros Activos (IHC: Chips que se pueden remover individualmente o limpiar todos) */}
+            {hasActiveFilters && (
+              <div className="active-filters-bar">
+                <span className="active-filters-title">Filtros activos:</span>
+                <div className="active-filter-chips">
+                  {searchQuery.trim() && (
+                    <span className="filter-chip">
+                      🔍 &quot;{searchQuery}&quot;
+                      <button type="button" onClick={() => setSearchQuery('')} aria-label="Quitar filtro de búsqueda">✕</button>
+                    </span>
+                  )}
+                  {filterSubject && filterSubject !== 'todas' && (
+                    <span className="filter-chip">
+                      📚 {filterSubject}
+                      <button type="button" onClick={() => setFilterSubject('')} aria-label="Quitar filtro de materia">✕</button>
+                    </span>
+                  )}
+                  {filterModality && filterModality !== 'todas' && (
+                    <span className="filter-chip">
+                      {filterModality === 'Virtual' ? '💻' : '🏫'} {filterModality}
+                      <button type="button" onClick={() => setFilterModality('todas')} aria-label="Quitar filtro de modalidad">✕</button>
+                    </span>
+                  )}
+                  {filterDate === 'hoy' && (
+                    <span className="filter-chip">
+                      📅 Hoy
+                      <button type="button" onClick={() => setFilterDate('todas')} aria-label="Quitar filtro de fecha">✕</button>
+                    </span>
+                  )}
+                  {filterDate === 'proximos_7_dias' && (
+                    <span className="filter-chip">
+                      🗓️ Próximos 7 días
+                      <button type="button" onClick={() => setFilterDate('todas')} aria-label="Quitar filtro de fecha">✕</button>
+                    </span>
+                  )}
+                  {filterDate === 'rango' && (
+                    <span className="filter-chip">
+                      📆 Rango: {filterDateFrom || '...'} a {filterDateTo || '...'}
+                      <button type="button" onClick={() => { setFilterDate('todas'); setFilterDateFrom(''); setFilterDateTo('') }} aria-label="Quitar filtro de rango">✕</button>
+                    </span>
+                  )}
+                  {filterOnlyAvailable && (
+                    <span className="filter-chip chip-available">
+                      🟢 Solo disponibles
+                      <button type="button" onClick={() => setFilterOnlyAvailable(false)} aria-label="Quitar filtro de disponibilidad">✕</button>
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="btn-clear-all-filters"
+                    onClick={handleResetFilters}
+                    title="Restablecer todos los filtros"
+                  >
+                    🗑️ Limpiar filtros
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Formulario modal de nueva sesión */}
@@ -374,6 +684,42 @@ export default function Dashboard() {
                       required
                     />
                   </div>
+
+                  <div className="session-form-group">
+                    <label htmlFor="session-subject-select">Materia asociada</label>
+                    <select
+                      id="session-subject-select"
+                      value={sessionForm.subject}
+                      onChange={(e) => setSessionForm((p) => ({ ...p, subject: e.target.value }))}
+                      required
+                    >
+                      <option value="">-- Selecciona una materia --</option>
+                      {subjects.map((sub) => (
+                        <option key={sub.id || sub.code} value={sub.name}>
+                          {sub.emoji ? `${sub.emoji} ` : ''}{sub.name}
+                        </option>
+                      ))}
+                      <option value="__OTRO__">➕ Otra materia...</option>
+                    </select>
+                  </div>
+
+                  {sessionForm.subject === '__OTRO__' && (
+                    <div className="session-form-group custom-subject-group">
+                      <label htmlFor="custom-subject-input">Nombre de la nueva materia</label>
+                      <input
+                        id="custom-subject-input"
+                        type="text"
+                        placeholder="Ej: Robótica Móvil, Cálculo III..."
+                        value={customSubjectName}
+                        onChange={(e) => setCustomSubjectName(e.target.value)}
+                        required
+                        minLength={3}
+                      />
+                      <small className="form-help-text">
+                        💡 Se registrará automáticamente en la base de datos para futuras sesiones y filtros.
+                      </small>
+                    </div>
+                  )}
 
                   <div className="session-form-row">
                     <div className="session-form-group">
@@ -440,8 +786,12 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Lista de sesiones guardadas */}
-          {sessions.length > 0 ? (
+          {loadingSessions ? (
+            <div className="sessions-loading-placeholder">
+              <span className="sessions-loading-spinner">⏳</span>
+              <p>Consultando sesiones en la base de datos...</p>
+            </div>
+          ) : sessions.length > 0 ? (
             <div className="sessions-grid">
               {sessions.map((s) => {
                 const isClosed = s.status === 'cerrada'
@@ -493,9 +843,16 @@ export default function Dashboard() {
                     className={`session-card ${cardStateClass}`}
                   >
                     <div className="session-card-header">
-                      <span className={`session-modality-badge ${modalityColor(s.modality)}`}>
-                        {s.modality}
-                      </span>
+                      <div className="session-card-tags">
+                        <span className={`session-modality-badge ${modalityColor(s.modality)}`}>
+                          {s.modality}
+                        </span>
+                        {s.subject && (
+                          <span className="session-subject-badge" title={`Materia: ${s.subject}`}>
+                            📚 {s.subject}
+                          </span>
+                        )}
+                      </div>
                       <span
                         className={`session-status-badge ${statusBadgeClass}`}
                         id={`status-badge-${s.id}`}
@@ -639,6 +996,19 @@ export default function Dashboard() {
                 )
               })}
             </div>
+          ) : hasActiveFilters ? (
+            <div className="no-sessions-placeholder filter-empty-state">
+              <span className="no-sessions-icon">🔍</span>
+              <h3>No se encontraron sesiones coincidentes</h3>
+              <p>No hay ninguna sesión que cumpla con los filtros seleccionados (prueba cambiando la materia, la modalidad o el rango de fechas).</p>
+              <button
+                type="button"
+                className="btn-reset-empty-state"
+                onClick={handleResetFilters}
+              >
+                ↺ Restablecer todos los filtros
+              </button>
+            </div>
           ) : (
             <div className="no-sessions-placeholder">
               <span className="no-sessions-icon">📭</span>
@@ -691,6 +1061,40 @@ export default function Dashboard() {
                   minLength={3}
                 />
               </div>
+
+              <div className="form-group" style={{ marginTop: '10px' }}>
+                <label>Materia asociada</label>
+                <select
+                  value={editForm.subject}
+                  onChange={(e) => setEditForm({ ...editForm, subject: e.target.value })}
+                  required
+                >
+                  <option value="">-- Selecciona una materia --</option>
+                  {subjects.map((sub) => (
+                    <option key={sub.id || sub.code} value={sub.name}>
+                      {sub.emoji ? `${sub.emoji} ` : ''}{sub.name}
+                    </option>
+                  ))}
+                  <option value="__OTRO__">➕ Otra materia...</option>
+                </select>
+              </div>
+
+              {editForm.subject === '__OTRO__' && (
+                <div className="form-group custom-subject-group">
+                  <label>Nombre de la nueva materia</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Robótica Móvil, Cálculo III..."
+                    value={editCustomSubjectName}
+                    onChange={(e) => setEditCustomSubjectName(e.target.value)}
+                    required
+                    minLength={3}
+                  />
+                  <small className="form-help-text">
+                    💡 Se registrará automáticamente en la base de datos para futuras sesiones y filtros.
+                  </small>
+                </div>
+              )}
 
               <div className="form-row-edit">
                 <div className="form-group">

@@ -57,6 +57,7 @@ export default function Dashboard() {
   const [sessionToDelete, setSessionToDelete] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
   const [joiningSessionId, setJoiningSessionId] = useState(null)
+  const [sessionToJoin, setSessionToJoin] = useState(null)
 
   // Debounce para la búsqueda por texto (300ms)
   useEffect(() => {
@@ -305,6 +306,14 @@ export default function Dashboard() {
     } finally {
       setJoiningSessionId(null)
     }
+  }
+
+  // Confirmar e inscribirse desde el diálogo modal (Heurística H5 / H3)
+  const handleConfirmJoin = async () => {
+    if (!sessionToJoin) return
+    const targetSession = sessionToJoin
+    setSessionToJoin(null)
+    await handleJoinSession(targetSession)
   }
 
   // Acción: Cerrar inscripciones (Transición abierta -> cerrada)
@@ -656,6 +665,13 @@ export default function Dashboard() {
                 </div>
               </div>
             )}
+
+            {/* Indicador de resultados visibles (Heurística H1: Visibilidad del estado del sistema) */}
+            <div className="filter-results-status">
+              <span className="filter-results-badge">
+                {loadingSessions ? '⏳ Buscando sesiones...' : `📋 ${sessions.length} ${sessions.length === 1 ? 'sesión encontrada' : 'sesiones encontradas'}`}
+              </span>
+            </div>
           </div>
 
           {/* Formulario modal de nueva sesión */}
@@ -878,6 +894,12 @@ export default function Dashboard() {
                     <div className="session-spots">
                       👥 <strong>{s.participants_count || 0} / {s.spots}</strong> participantes
                       {isClosed && <span className="session-spots-closed-pill"> (Cupo cerrado)</span>}
+                      {!isClosed && !isFull && ((s.spots || 0) - (s.participants_count || 0) === 1) && (
+                        <span className="session-spots-urgency-pill"> ⚠️ ¡Último cupo disponible!</span>
+                      )}
+                      {!isClosed && !isFull && ((s.spots || 0) - (s.participants_count || 0) > 1) && (
+                        <span className="session-spots-available-pill"> ({((s.spots || 0) - (s.participants_count || 0))} cupos libres)</span>
+                      )}
                     </div>
 
                     {/* Acciones exclusivas del creador: Editar y Eliminar */}
@@ -983,7 +1005,7 @@ export default function Dashboard() {
                           <button
                             type="button"
                             className="btn-join-session btn-join-active"
-                            onClick={() => handleJoinSession(s)}
+                            onClick={() => setSessionToJoin(s)}
                             disabled={joiningSessionId === s.id}
                             title="Unirme a esta sesión de estudio"
                           >
@@ -1209,6 +1231,104 @@ export default function Dashboard() {
                 disabled={deletingId === sessionToDelete.id}
               >
                 {deletingId === sessionToDelete.id ? 'Eliminando...' : 'Sí, Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmación previa para unirse (Heurística H5: Prevención de errores / H3: Control del usuario) */}
+      {sessionToJoin && (
+        <div className="modal-overlay" onClick={() => setSessionToJoin(null)}>
+          <div className="modal modal-join-confirm" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-header-icon-title">
+                <span className="modal-icon-badge">🎒</span>
+                <h3>Confirmar inscripción a sesión</h3>
+              </div>
+              <button
+                type="button"
+                className="btn-modal-close-icon"
+                onClick={() => setSessionToJoin(null)}
+                title="Cerrar ventana"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="modal-body-content">
+              <p className="join-confirm-intro">
+                Revisa los detalles antes de unirte. Tu lugar quedará reservado inmediatamente en la base de datos:
+              </p>
+
+              <div className="join-session-summary-card">
+                <div className="join-session-name-row">
+                  <h4 className="join-session-name">{sessionToJoin.name}</h4>
+                  <span className="join-session-modality-pill">
+                    {sessionToJoin.modality === 'Virtual' ? '💻 Virtual' : sessionToJoin.modality === 'Presencial' ? '🏫 Presencial' : '🔄 Híbrida'}
+                  </span>
+                </div>
+
+                <div className="join-session-details-grid">
+                  <div className="join-detail-item">
+                    <span className="detail-label">📚 Materia:</span>
+                    <span className="detail-value">{sessionToJoin.subject || 'General'}</span>
+                  </div>
+                  <div className="join-detail-item">
+                    <span className="detail-label">📅 Fecha:</span>
+                    <span className="detail-value">{sessionToJoin.date}</span>
+                  </div>
+                  {sessionToJoin.time && (
+                    <div className="join-detail-item">
+                      <span className="detail-label">⏰ Horario:</span>
+                      <span className="detail-value">{sessionToJoin.time}</span>
+                    </div>
+                  )}
+                  <div className="join-detail-item">
+                    <span className="detail-label">👥 Cupos libres:</span>
+                    <span className="detail-value highlight-spots">
+                      {Math.max(0, (sessionToJoin.spots || 0) - (sessionToJoin.participants_count || 0))} de {sessionToJoin.spots} disponibles
+                    </span>
+                  </div>
+                  {sessionToJoin.location && (
+                    <div className="join-detail-item full-width">
+                      <span className="detail-label">📍 Ubicación / Enlace:</span>
+                      <span className="detail-value">{sessionToJoin.location}</span>
+                    </div>
+                  )}
+                  {sessionToJoin.creator_name && (
+                     <div className="join-detail-item full-width">
+                      <span className="detail-label">👤 Organizador:</span>
+                      <span className="detail-value">{sessionToJoin.creator_name}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="join-disclaimer-box">
+                <span className="disclaimer-icon">💡</span>
+                <p>
+                  Al confirmar, te comprometes a participar en la sesión y tu correo quedará registrado en la lista oficial de asistentes.
+                </p>
+              </div>
+            </div>
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="btn-cancel"
+                onClick={() => setSessionToJoin(null)}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                id="btn-confirm-join-submit"
+                className="btn-confirm-join"
+                onClick={handleConfirmJoin}
+                disabled={joiningSessionId === sessionToJoin.id}
+              >
+                {joiningSessionId === sessionToJoin.id ? '⏳ Inscribiendo...' : '✅ Sí, Unirme a la sesión'}
               </button>
             </div>
           </div>

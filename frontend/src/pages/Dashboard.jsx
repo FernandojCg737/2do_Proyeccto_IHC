@@ -1241,7 +1241,7 @@ export default function Dashboard() {
       {sessionToJoin && (
         <div className="modal-overlay" onClick={() => setSessionToJoin(null)}>
           <div className="modal modal-join-confirm" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+            <div className="modal-header-row">
               <div className="modal-header-icon-title">
                 <span className="modal-icon-badge">🎒</span>
                 <h3>Confirmar inscripción a sesión</h3>

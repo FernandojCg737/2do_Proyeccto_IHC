@@ -2082,7 +2082,7 @@
 
 .modal-icon-badge {
   font-size: 1.5rem;
-  background: rgba(79, 70, 229, 0.12);
+  background: rgba(56, 189, 248, 0.15);
   width: 40px;
   height: 40px;
   border-radius: 10px;
@@ -2099,7 +2099,7 @@
 }
 
 .join-session-summary-card {
-  background: var(--bg-hover, #f8fafc);
+  background: var(--surface2);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 16px;
@@ -2126,8 +2126,9 @@
 .join-session-modality-pill {
   font-size: 0.78rem;
   font-weight: 600;
-  background: rgba(79, 70, 229, 0.1);
+  background: rgba(56, 189, 248, 0.15);
   color: var(--primary);
+  border: 1px solid rgba(56, 189, 248, 0.25);
   padding: 3px 8px;
   border-radius: 8px;
   white-space: nowrap;
@@ -2164,7 +2165,7 @@
 }
 
 .detail-value.highlight-spots {
-  color: #059669;
+  color: #10b981;
   font-weight: 700;
 }
 
@@ -2214,6 +2215,41 @@
 .btn-confirm-join:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* Reglas explícitas de contraste para Modo Oscuro */
+[data-theme="dark"] .join-session-summary-card {
+  background: var(--surface2);
+  border-color: rgba(56, 189, 248, 0.22);
+}
+
+[data-theme="dark"] .join-session-name {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .detail-value {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .detail-label {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .detail-value.highlight-spots {
+  color: #34d399;
+}
+
+[data-theme="dark"] .join-disclaimer-box {
+  background: rgba(52, 211, 153, 0.1);
+  border-color: rgba(52, 211, 153, 0.25);
+}
+
+[data-theme="dark"] .join-disclaimer-box p {
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .join-confirm-intro {
+  color: #94a3b8;
 }
 
 

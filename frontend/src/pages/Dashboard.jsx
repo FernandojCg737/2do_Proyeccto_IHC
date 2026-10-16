@@ -308,12 +308,14 @@ export default function Dashboard() {
     }
   }
 
-  // Confirmar e inscribirse desde el diálogo modal (Heurística H5 / H3)
+  // Confirmar e inscribirse desde el diálogo modal (Ley de Fitts y Heurística H5)
   const handleConfirmJoin = async () => {
     if (!sessionToJoin) return
-    const targetSession = sessionToJoin
-    setSessionToJoin(null)
-    await handleJoinSession(targetSession)
+    try {
+      await handleJoinSession(sessionToJoin)
+    } finally {
+      setSessionToJoin(null)
+    }
   }
 
   // Acción: Cerrar inscripciones (Transición abierta -> cerrada)

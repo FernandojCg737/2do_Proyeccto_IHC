@@ -235,3 +235,19 @@ class SessionResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
+# ── HISTORIAL (Issue #14) ─────────────────────────────────
+class HistoryEventResponse(BaseModel):
+    id: int
+    event_type: str
+    created_at: datetime | None = None
+    session_id: int | None = None
+    session_name: str
+    session_subject: str | None = None
+    session_date: dt.date | None = None
+    session_modality: str | None = None
+    session_creator_name: str | None = None
+    current_status: str
+    participants_count: int | None = None
+    spots: int | None = None
+

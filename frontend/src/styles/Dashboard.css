@@ -104,6 +104,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  min-height: 48px; /* Fitts: área activa mínima para cada acceso de navegación */
   padding: 12px 16px;
   border-radius: var(--radius);
   color: var(--text-muted);
@@ -635,6 +636,7 @@
   align-items: center;
   justify-content: center;
   gap: 3px;
+  min-height: 52px; /* Fitts: objetivo táctil amplio en la barra inferior */
   color: var(--text-muted);
   text-decoration: none;
   font-size: 0.72rem;

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useLocation, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import ThemeToggle from '../components/ThemeToggle'
 import api from '../api/axios'
@@ -109,6 +109,13 @@ export default function Dashboard() {
   useEffect(() => {
     fetchSessions()
   }, [fetchSessions])
+
+  // Al llegar desde otra página (ej. "Buscar sesiones" del historial), ir directo a la sección indicada
+  const location = useLocation()
+  useEffect(() => {
+    if (!location.hash || loadingSessions) return
+    document.getElementById(location.hash.slice(1))?.scrollIntoView({ behavior: 'smooth' })
+  }, [location.hash, loadingSessions])
 
   // Limpiar todos los filtros (IHC)
   const handleResetFilters = () => {
@@ -399,7 +406,8 @@ export default function Dashboard() {
         </div>
         <nav className="sidebar-nav">
           <Link to="/dashboard" className="sidebar-item active">🏠 <span>Dashboard</span></Link>
-          <a href="#sesiones" className="sidebar-item">📅 <span>Mis sesiones ({sessions.length})</span></a>
+          <a href="#sesiones" className="sidebar-item">📅 <span>Todas las sesiones ({sessions.length})</span></a>
+          <Link to="/historial" className="sidebar-item">🕘 <span>Mi historial</span></Link>
           <Link to="/profile" className="sidebar-item">👤 <span>Mi perfil</span></Link>
         </nav>
         <div className="sidebar-footer">
@@ -1053,6 +1061,10 @@ export default function Dashboard() {
           <span className="mobile-nav-icon">📅</span>
           <span>Sesiones</span>
         </a>
+        <Link to="/historial" className="mobile-nav-item">
+          <span className="mobile-nav-icon">🕘</span>
+          <span>Historial</span>
+        </Link>
         <Link to="/profile" className="mobile-nav-item">
           <span className="mobile-nav-icon">👤</span>
           <span>Perfil</span>

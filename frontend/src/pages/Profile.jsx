@@ -250,6 +250,9 @@ export default function Profile() {
           <Link to="/dashboard#materias" className="sidebar-item">
             📚 <span>Materias</span>
           </Link>
+          <Link to="/historial" className="sidebar-item">
+            🕘 <span>Mi historial</span>
+          </Link>
           <Link to="/profile" className="sidebar-item active">
             👤 <span>Mi perfil</span>
           </Link>
@@ -651,6 +654,10 @@ export default function Profile() {
         <Link to="/dashboard#materias" className="mobile-nav-item">
           <span className="mobile-nav-icon">📚</span>
           <span>Materias</span>
+        </Link>
+        <Link to="/historial" className="mobile-nav-item">
+          <span className="mobile-nav-icon">🕘</span>
+          <span>Historial</span>
         </Link>
         <Link to="/profile" className="mobile-nav-item active">
           <span className="mobile-nav-icon">👤</span>

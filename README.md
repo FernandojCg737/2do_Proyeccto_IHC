@@ -132,6 +132,32 @@ docker exec -it studymatch_backend python -m pytest -v
 
 ---
 
+## 🕘 Historial de Participación (Tarea 4 – Issue #12)
+
+Responde la pregunta de StudyMatch: **¿En qué sesiones participó la persona?**
+
+> Como estudiante, quiero ver un historial de las sesiones de estudio en las que participé, para recordar mi trayectoria de estudio y saber qué pasó con cada sesión sin revisarlas una por una.
+
+### Cómo funciona
+- **Datos:** cada acción (unirse, crear, cerrar o eliminar una sesión) guarda un evento en la tabla `session_history` de PostgreSQL, con una copia de los datos de la sesión para que el evento se conserve aunque la sesión se elimine.
+- **Consulta:** `GET /history/me` devuelve solo el historial del usuario autenticado (por su token JWT), del más reciente al más antiguo. Filtro opcional `?tipo=todos|unido|creada`.
+- **Interfaz:** página **Mi historial** (`/historial`), accesible desde el sidebar y la barra inferior móvil, con filtros `Todas · Me uní · Organicé`, detalle expandible y estado vacío con acción **"Buscar sesiones"**.
+
+### Cómo comprobarlo
+1. Inicia sesión y únete a una sesión abierta desde el Dashboard.
+2. Entra a **Mi historial**: aparece *"Te uniste a ..."* con la fecha y el estado actual.
+3. Recarga la página: el evento sigue ahí (persistido en la base de datos).
+4. Con un usuario sin actividad se muestra el estado vacío.
+
+### Pruebas
+```bash
+docker exec studymatch_backend python -m unittest tests.test_session_history -v
+```
+
+Decisiones de diseño (Fitts, Hick y carga cognitiva) con antes, después y código: [`docs/decisiones-interaccion.md`](docs/decisiones-interaccion.md).
+
+---
+
 ## 📁 Estructura del proyecto
 
 ```

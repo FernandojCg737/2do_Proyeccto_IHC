@@ -177,6 +177,95 @@ class Session(Base):
         return self.status == "abierta"
 
 
+# ── HISTORIAL DE PARTICIPACIÓN (Issue #12 / #13) ───────────
+HISTORY_EVENT_TYPES = ("unido", "creada", "cerrada", "eliminada")
+
+
+class SessionHistory(Base):
+    """
+    Evento persistido del historial: qué ocurrió, cuándo, a quién y con qué sesión.
+    Guarda una copia de los datos de la sesión al momento del evento para que
+    el historial siga siendo comprensible aunque la sesión se edite o se elimine.
+    """
+    __tablename__ = "session_history"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    session_id = Column(Integer, ForeignKey("sessions.id", ondelete="SET NULL"), nullable=True, index=True)
+    event_type = Column(String(30), nullable=False)
+    session_name = Column(String(150), nullable=False)
+    session_subject = Column(String(150), nullable=True)
+    session_date = Column(Date, nullable=True)
+    session_modality = Column(String(50), nullable=True)
+    session_creator_name = Column(String(150), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+
+def record_session_event(db, user_id: int, event_type: str, session: Session, keep_link: bool = True) -> SessionHistory:
+    """
+    Registra un evento del historial copiando los datos actuales de la sesión.
+    Con keep_link=False el evento no queda vinculado a la sesión (se usa al eliminarla).
+    """
+    if event_type not in HISTORY_EVENT_TYPES:
+        raise ValueError(f"Tipo de evento inválido: '{event_type}'.")
+
+    event = SessionHistory(
+        user_id=user_id,
+        session_id=session.id if keep_link else None,
+        event_type=event_type,
+        session_name=session.name,
+        session_subject=session.subject,
+        session_date=session.date,
+        session_modality=session.modality,
+        session_creator_name=session.creator_name,
+    )
+    db.add(event)
+    return event
+
+
+def backfill_session_history(db) -> int:
+    """
+    Migración idempotente: genera los eventos 'creada' y 'unido' de las sesiones
+    que existían antes del historial. La hora real de inscripción no se guardaba,
+    así que se usa la fecha de creación de la sesión como referencia.
+    Retorna la cantidad de eventos creados.
+    """
+    existing = {
+        (e.user_id, e.session_id, e.event_type)
+        for e in db.query(SessionHistory.user_id, SessionHistory.session_id, SessionHistory.event_type)
+        .filter(SessionHistory.session_id.isnot(None))
+        .all()
+    }
+    users_by_email = {
+        u.email.strip().lower(): u.id
+        for u in db.query(User.id, User.email).all()
+        if u.email
+    }
+
+    created = 0
+    for session in db.query(Session).all():
+        pending = []
+        creator_id = session.creator_id or users_by_email.get((session.creator_email or "").strip().lower())
+        if creator_id:
+            pending.append((creator_id, "creada"))
+        for email in session.get_participant_emails_list():
+            participant_id = users_by_email.get(email)
+            if participant_id:
+                pending.append((participant_id, "unido"))
+
+        for user_id, event_type in pending:
+            if (user_id, session.id, event_type) in existing:
+                continue
+            event = record_session_event(db, user_id, event_type, session)
+            if session.created_at:
+                event.created_at = session.created_at
+            existing.add((user_id, session.id, event_type))
+            created += 1
+
+    db.commit()
+    return created
+
+
 def filter_sessions_query(
     db,
     search: Optional[str] = None,

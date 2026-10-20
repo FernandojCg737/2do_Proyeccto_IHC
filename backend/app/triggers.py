@@ -47,3 +47,14 @@ def setup_triggers():
             print("Trigger trg_update_user_profile configurado exitosamente en PostgreSQL")
     except Exception as e:
         print(f"Error al configurar triggers: {e}")
+
+    # Migrar participaciones existentes al historial (Issue #13)
+    try:
+        from app.database import SessionLocal
+        from app.models import backfill_session_history
+        with SessionLocal() as db:
+            created = backfill_session_history(db)
+            if created:
+                print(f"Historial: {created} eventos migrados desde sesiones existentes")
+    except Exception as e:
+        print(f"Advertencia al migrar historial: {e}")

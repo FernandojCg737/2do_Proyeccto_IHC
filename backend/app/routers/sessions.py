@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session as DBSession
 from app.database import get_db
-from app.models import Session, User, Subject, filter_sessions_query
+from app.models import Session, User, Subject, filter_sessions_query, record_session_event
 from app.schemas import SessionCreate, SessionResponse, SessionStatusUpdate, SessionUpdate
 from app.routers.auth import get_current_user
 
@@ -46,6 +46,8 @@ def create_session(
         creator_email=current_user.email.strip().lower()
     )
     db.add(new_session)
+    db.flush()  # obtener el id antes de registrar el evento
+    record_session_event(db, current_user.id, "creada", new_session)
     db.commit()
     db.refresh(new_session)
     return new_session
@@ -117,6 +119,7 @@ def close_session_registration(
             detail=str(e)
         )
 
+    record_session_event(db, current_user.id, "cerrada", session)
     db.commit()
     db.refresh(session)
     return session
@@ -160,6 +163,7 @@ def update_session_status(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=str(e)
             )
+        record_session_event(db, current_user.id, "cerrada", session)
     elif body.status == "abierta":
         if session.status == "abierta":
             raise HTTPException(
@@ -230,6 +234,8 @@ def update_session(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Estado inválido. Solo se permite 'abierta' o 'cerrada'."
             )
+        if data.status == "cerrada" and session.status != "cerrada":
+            record_session_event(db, current_user.id, "cerrada", session)
         session.status = data.status
 
     db.commit()
@@ -266,6 +272,8 @@ def delete_session(
             detail="No autorizado: Solo el creador puede eliminar su sesión."
         )
 
+    # El evento conserva una copia de la sesión; no queda vinculado porque la fila se elimina
+    record_session_event(db, current_user.id, "eliminada", session, keep_link=False)
     db.delete(session)
     db.commit()
     return {"message": "Sesión eliminada exitosamente", "id": session_id}
@@ -296,6 +304,7 @@ def join_session(
             detail=str(e)
         )
 
+    record_session_event(db, current_user.id, "unido", session)
     db.commit()
     db.refresh(session)
     return session
